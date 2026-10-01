@@ -8,7 +8,7 @@
 
 ## 🚀 Overview
 
-Marine ecosystems generate large volumes of complex data from multiple sources. ORCA uses a **multi-agent AI architecture** where specialized agents independently analyze different aspects of marine data and collaborate to produce a unified understanding.
+Marine ecosystems generate large volumes of complex data from multiple sources. ORCA uses a **multi-agent AI architecture** where specialized agents analyze different aspects of marine data and collaborate to produce a unified understanding.
 
 Instead of relying on a single AI model, ORCA distributes tasks among specialized agents and coordinates their outputs through a central reasoning workflow.
 
@@ -16,17 +16,17 @@ Instead of relying on a single AI model, ORCA distributes tasks among specialize
 
 ## 🧠 Key Features
 
-- 🤖 **Multi-Agent AI Architecture**
-- 🌊 **Marine Ecosystem Analysis**
-- 📊 **Oceanographic Data Processing**
-- 🔄 **Collaborative Agent Reasoning**
-- 🔍 **Intelligent Data Analysis**
-- 📈 **Interactive Data Visualization**
-- 🧩 **Task Decomposition & Coordination**
-- 💬 **Agent-to-Agent Communication**
-- ⚡ **Automated Insight Generation**
-- 🗺️ **Marine Data Visualization**
-- 📋 **Structured Analysis & Reporting**
+- 🤖 Multi-Agent AI Architecture
+- 🌊 Marine Ecosystem Analysis
+- 📊 Oceanographic Data Processing
+- 🔄 Collaborative Agent Reasoning
+- 🔍 Intelligent Data Analysis
+- 📈 Interactive Data Visualization
+- 🧩 Task Decomposition & Coordination
+- 💬 Agent-to-Agent Communication
+- ⚡ Automated Insight Generation
+- 🗺️ Marine Data Visualization
+- 📋 Structured Analysis & Reporting
 
 ---
 
@@ -34,334 +34,32 @@ Instead of relying on a single AI model, ORCA distributes tasks among specialize
 
 ```text
                     ┌──────────────────────┐
-                    │     User / Query     │
+                    │     USER / QUERY     │
                     └──────────┬───────────┘
                                │
                                ▼
                     ┌──────────────────────┐
-                    │   ORCA Coordinator   │
-                    │    / AI Orchestrator │
+                    │  ORCA COORDINATOR    │
+                    │   AI ORCHESTRATOR    │
                     └──────────┬───────────┘
                                │
               ┌────────────────┼────────────────┐
               │                │                │
               ▼                ▼                ▼
        ┌────────────┐   ┌────────────┐   ┌────────────┐
-       │ Data Agent │   │Analysis    │   │ Visualization│
-       │            │   │Agent       │   │Agent        │
-       └─────┬──────┘   └─────┬──────┘   └─────┬──────┘
-             │                │                │
-             └────────────────┼────────────────┘
+       │ DATA AGENT │   │ ANALYSIS   │   │ VISUALIZATION│
+       │            │   │ AGENT      │   │ AGENT       │
+       └─────┬──────┘   └─────┬──────┘   └──────┬─────┘
+             │                │                 │
+             └────────────────┼─────────────────┘
                               ▼
                     ┌──────────────────────┐
-                    │ Collaborative        │
-                    │ Reasoning Layer      │
+                    │ COLLABORATIVE        │
+                    │ REASONING LAYER      │
                     └──────────┬───────────┘
                                │
                                ▼
                     ┌──────────────────────┐
-                    │  Unified Marine      │
-                    │      Insights        │
+                    │ UNIFIED MARINE       │
+                    │ INSIGHTS              │
                     └──────────────────────┘
-```
-
----
-
-## 🤖 AI Agent Workflow
-
-ORCA uses specialized agents for different stages of analysis.
-
-```text
-User Query
-    ↓
-Query Understanding
-    ↓
-Task Decomposition
-    ↓
-Agent Selection
-    ↓
-Parallel Analysis
-    ↓
-Agent Collaboration
-    ↓
-Result Validation
-    ↓
-Reasoning & Synthesis
-    ↓
-Final Marine Insight
-```
-
----
-
-## 🧩 Agent Roles
-
-### 🔹 Coordinator Agent
-
-Manages the overall workflow and assigns tasks to specialized agents.
-
-### 🔹 Data Agent
-
-Processes and prepares marine/oceanographic datasets for analysis.
-
-### 🔹 Analysis Agent
-
-Analyzes environmental parameters and identifies meaningful patterns.
-
-### 🔹 Reasoning Agent
-
-Combines information from multiple agents and performs higher-level reasoning.
-
-### 🔹 Visualization Agent
-
-Transforms analytical results into understandable charts, maps, and visual insights.
-
-### 🔹 Report Agent
-
-Generates structured summaries and reports from the final analysis.
-
----
-
-## 📊 Marine Data Analysis
-
-ORCA can be extended to work with marine parameters such as:
-
-- 🌡️ Temperature
-- 💧 Salinity
-- 🌊 Pressure
-- 🫧 Dissolved Oxygen
-- 🧪 Biogeochemical Parameters
-- 📍 Geographic Coordinates
-- ⏱️ Time-Series Measurements
-- 🌐 Oceanographic Observations
-
-The architecture is designed to support additional datasets and analytical modules.
-
----
-
-## 🛠️ Technology Stack
-
-### Programming Languages
-
-- **Python**
-- **JavaScript**
-- **HTML**
-- **CSS**
-- **JSON**
-
-### AI & Backend
-
-- Python
-- Multi-Agent AI Architecture
-- LLM-based Reasoning
-- REST APIs
-
-### Frontend
-
-- HTML5
-- CSS3
-- JavaScript
-- Interactive visualization components
-
-### Data & Visualization
-
-- Python data-processing libraries
-- Data visualization libraries
-- JSON/CSV-based data handling
-
----
-
-## 📁 Project Structure
-
-```text
-ORCA-Marine-Ecosystem-Reasoning-with-Collaborative-Agents-ISRO/
-│
-├── agents/
-│   ├── coordinator/
-│   ├── data_agent/
-│   ├── analysis_agent/
-│   ├── reasoning_agent/
-│   ├── visualization_agent/
-│   └── report_agent/
-│
-├── backend/
-│   ├── api/
-│   ├── services/
-│   └── models/
-│
-├── frontend/
-│   ├── components/
-│   ├── pages/
-│   ├── styles/
-│   └── assets/
-│
-├── data/
-│   ├── sample/
-│   └── processed/
-│
-├── reports/
-│
-├── tests/
-│
-├── requirements.txt
-├── README.md
-└── .gitignore
-```
-
-> Update the structure above if your actual repository uses different folder names.
-
----
-
-## ⚙️ Installation
-
-Clone the repository:
-
-```bash
-git clone https://github.com/adityasaripalli12/ORCA-Marine-Ecosystem-Reasoning-with-Collaborative-Agents-ISRO-.git
-```
-
-Enter the project directory:
-
-```bash
-cd ORCA-Marine-Ecosystem-Reasoning-with-Collaborative-Agents-ISRO-
-```
-
-Create a virtual environment:
-
-```bash
-python -m venv venv
-```
-
-Activate it on Windows:
-
-```powershell
-venv\Scripts\activate
-```
-
-Install dependencies:
-
-```bash
-pip install -r requirements.txt
-```
-
----
-
-## 🔐 Environment Configuration
-
-Create a `.env` file:
-
-```env
-AI_API_KEY=your_api_key_here
-```
-
-Never commit API keys or other secrets to GitHub.
-
----
-
-## ▶️ Running the Project
-
-Start the backend:
-
-```bash
-python app.py
-```
-
-Then open:
-
-```text
-http://127.0.0.1:5000
-```
-
-If your project uses a different entry point, replace `app.py` with the appropriate file.
-
----
-
-## 🔬 Example Workflow
-
-A user can provide a marine-analysis query such as:
-
-```text
-Analyze the available oceanographic observations
-and identify unusual environmental patterns.
-```
-
-ORCA then:
-
-```text
-1. Understands the query
-2. Identifies required data
-3. Assigns tasks to specialized agents
-4. Processes the data
-5. Performs independent analysis
-6. Shares results between agents
-7. Performs collaborative reasoning
-8. Generates visualizations
-9. Produces a unified insight
-```
-
----
-
-## 🎯 Objectives
-
-ORCA aims to:
-
-- Improve the interpretation of complex marine datasets
-- Automate repetitive data-analysis tasks
-- Enable collaborative AI reasoning
-- Provide interpretable marine insights
-- Support oceanographic research and monitoring
-- Create a scalable architecture for future marine-AI applications
-
----
-
-## 🌐 Future Scope
-
-Future versions can include:
-
-- Real-time ocean-data ingestion
-- Advanced geospatial visualization
-- Satellite-data integration
-- Predictive marine ecosystem models
-- Anomaly detection
-- Climate-pattern analysis
-- Autonomous agent collaboration
-- Voice-based marine-data queries
-- Advanced scientific reporting
-- Integration with additional oceanographic data sources
-
----
-
-## 📌 Problem Statement
-
-**PS 26176 — ORCA Marine Ecosystem Reasoning with Collaborative Agents**
-
-The project focuses on applying collaborative AI-agent reasoning to marine ecosystem data analysis, enabling multiple specialized agents to work together to process information, identify patterns, and generate meaningful insights.
-
----
-
-## 👥 Project
-
-**Project:** ORCA — Marine Ecosystem Reasoning with Collaborative Agents  
-**Problem Statement:** PS 26176  
-**Organization:** ISRO  
-**Domain:** Artificial Intelligence / Marine Ecosystem / Oceanography
-
----
-
-## 📄 License
-
-This project is developed for research, educational, and innovation purposes.
-
----
-
-## ⭐ Support
-
-If you find this project useful, consider giving the repository a ⭐ on GitHub.
-
----
-
-### 🌊 ORCA
-
-**Observe. Reason. Collaborate. Analyze.**
-
-> *Building intelligent collaborative AI systems for understanding our oceans.*
- 
