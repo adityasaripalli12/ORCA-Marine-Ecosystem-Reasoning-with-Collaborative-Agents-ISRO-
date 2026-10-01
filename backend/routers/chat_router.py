@@ -4,59 +4,56 @@ from backend.database.connection import get_db
 from backend.models.chat import ChatHistory
 from backend.models.security import SecurityEvent
 from backend.models.audit import AuditLog
-from backend.schemas.chat import ChatRequest, ChatResponse, SqlGenerateRequest, RagSearchRequest
+from backend.schemas.chat import ChatRequest, ChatResponse
 from backend.auth.dependencies import get_current_user
 from backend.models.user import User
-from backend.services.rag_service import RAGPipelineService
-from backend.services.groq_service import GroqLLMService
-from backend.services.faiss_service import faiss_service
-import numpy as np
+from backend.services.ai_security_gateway import AISecurityGateway
+from backend.middleware.rate_limiter import rate_limiter
 
-router = APIRouter(prefix="", tags=["AI Chat & RAG Engine"])
+router = APIRouter(prefix="", tags=["AI Security Gateway & Chat Engine"])
 
 @router.post("/chat", response_model=ChatResponse)
-def execute_chat(payload: ChatRequest, request: Request, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def execute_chat(
+    payload: ChatRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
     client_ip = request.client.host if request.client else "127.0.0.1"
 
-    # Execute RAG Pipeline
-    result = RAGPipelineService.execute_rag_pipeline(payload.question)
+    # Enforce server-side sliding window rate limiting
+    rate_limiter.check_and_enforce(request, category="chat", limit=40, window_seconds=60)
+
+    # Process through FlowChat AI Security Gateway
+    result = AISecurityGateway.process_request(
+        user_question=payload.question,
+        current_user=current_user,
+        client_ip=client_ip,
+        db=db,
+        device_id=payload.device_id,
+        dataset_id=payload.dataset_id,
+        messages=payload.messages,
+        confirmed_action=payload.confirmed_action,
+        language=payload.language
+    )
 
     if result.get("blocked"):
-        # Log Security Threat Event
-        sec_evt = SecurityEvent(
-            event_type="Prompt Injection Blocked",
-            severity="Critical",
-            username=current_user.name,
-            ip=client_ip,
-            details=f"Prompt blocked: '{payload.question}'"
+        from fastapi import HTTPException
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "status": "blocked",
+                "blocked": True,
+                "reason": result.get("reason", "prompt_injection"),
+                "message": result.get("block_message", "Request blocked by FlowChat security controls."),
+            }
         )
-        audit = AuditLog(
-            username=current_user.name,
-            role=current_user.role,
-            action="PROMPT_BLOCKED",
-            ip_address=client_ip,
-            status="Denied",
-            description=f"WAF intercepted attack payload: {result['reason']}"
-        )
-        db.add(sec_evt)
-        db.add(audit)
-        db.commit()
 
-        return {
-            "id": "msg-blocked",
-            "question": payload.question,
-            "generated_sql": None,
-            "ai_response": result["ai_response"],
-            "confidence_score": 0.0,
-            "retrieved_docs": [],
-            "execution_time_ms": 12
-        }
-
-    # Store in ChatHistory
+    # Store legitimate conversation in ChatHistory
     chat = ChatHistory(
         user_id=current_user.id,
         question=payload.question,
-        generated_sql=result["generated_sql"],
+        generated_sql=result.get("generated_sql"),
         ai_response=result["ai_response"],
         confidence_score=result["confidence_score"]
     )
@@ -68,7 +65,7 @@ def execute_chat(payload: ChatRequest, request: Request, db: Session = Depends(g
         action="EXECUTE_AI_QUERY",
         ip_address=client_ip,
         status="Success",
-        description=f"AI query executed: '{payload.question[:30]}...'"
+        description=f"AI query processed: '{payload.question[:40]}...'"
     )
     db.add(audit)
     db.commit()
@@ -77,20 +74,30 @@ def execute_chat(payload: ChatRequest, request: Request, db: Session = Depends(g
     return {
         "id": chat.id,
         "question": chat.question,
-        "generated_sql": chat.generated_sql,
+        "intent": result.get("intent", "GENERAL_AI"),
+        "map_action": result.get("map_action", "NONE"),
+        "device_id": result.get("device_id"),
+        "location": result.get("location"),
+        "generated_sql": None,
         "ai_response": chat.ai_response,
         "confidence_score": chat.confidence_score,
-        "retrieved_docs": result["retrieved_docs"],
-        "execution_time_ms": result["execution_time_ms"]
+        "confidence_label": result.get("confidence_label", "HIGH"),
+        "provenance": result.get("provenance"),
+        "observation_data": result.get("observation_data"),
+        "retrieved_docs": result.get("retrieved_docs", []),
+        "execution_time_ms": result.get("execution_time_ms", 50),
+        "has_geo_data": result.get("has_geo_data", False),
+        "requires_map": result.get("requires_map", False),
+        "requires_confirmation": result.get("requires_confirmation", False),
+        "confirmation_action": result.get("confirmation_action"),
+        "risk_score": result.get("risk_score", 10),
+        "risk_level": result.get("risk_level", "LOW"),
+        "locations": result.get("locations", []),
+        "sources": result.get("sources", []),
+        "dataset_used": result.get("dataset_used"),
+        "records_retrieved": result.get("records_retrieved"),
+        "suggestions": result.get("suggestions", []),
+        "detected_language": result.get("detected_language", "en"),
+        "translated_query": result.get("translated_query")
     }
 
-@router.post("/generate-sql")
-def generate_sql(payload: SqlGenerateRequest, current_user: User = Depends(get_current_user)):
-    res = GroqLLMService.generate_sql_and_response(payload.question, [])
-    return {"question": payload.question, "sql": res["sql"], "confidence": res["confidence"]}
-
-@router.post("/rag-search")
-def rag_search(payload: RagSearchRequest, current_user: User = Depends(get_current_user)):
-    vec = np.random.rand(1, 128)
-    docs = faiss_service.search(vec, top_k=payload.top_k or 5)
-    return {"query": payload.query, "results": docs}

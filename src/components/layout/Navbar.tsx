@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useToast } from '../../context/ToastContext';
+import { useTranslation } from '../../i18n';
 import { RoleBadge } from '../common/RoleBadge';
 import { UserRole, ROLE_CONFIG } from '../../types';
+import { LanguageSelector } from './LanguageSelector';
 import { 
   Waves, Search, Bell, Moon, Sun, Shield, 
   ChevronDown, LogOut, Settings, Sparkles, CheckCheck
@@ -19,6 +21,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activePageTitle }) => {
   const { user, logout, setRole } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const { addToast } = useToast();
+  const { t } = useTranslation();
   
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -26,14 +29,14 @@ export const Navbar: React.FC<NavbarProps> = ({ activePageTitle }) => {
   const [searchQuery, setSearchQuery] = useState('');
 
   const notificationsList = [
-    { id: 1, title: 'Upload Verified', time: '5m ago', desc: 'argo_global_profile_2026_q2.nc SHA-256 hash verified.', type: 'upload_completed' as const },
-    { id: 2, title: 'Prompt Injection Blocked', time: '18m ago', desc: 'Security WAF blocked unauthorized prompt payload.', type: 'prompt_blocked' as const },
-    { id: 3, title: 'SQL Payload Intercepted', time: '1h ago', desc: 'Payload containing SELECT * FROM users intercepted.', type: 'sql_blocked' as const },
+    { id: 1, title: t('alerts.uploadVerified'), time: '5m ago', desc: 'argo_global_profile_2026_q2.nc SHA-256 hash verified.', type: 'upload_completed' as const },
+    { id: 2, title: t('alerts.promptInjectionBlocked'), time: '18m ago', desc: 'Security WAF blocked unauthorized prompt payload.', type: 'prompt_blocked' as const },
+    { id: 3, title: t('alerts.sqlBlocked'), time: '1h ago', desc: 'Payload containing SELECT * FROM users intercepted.', type: 'sql_blocked' as const },
   ];
 
   const handleRoleChange = (role: UserRole) => {
     setRole(role);
-    addToast('role_updated', 'Role Switch Triggered', `Switched view mode to ${role}`);
+    addToast('role_updated', t('alerts.roleUpdated'), t('alerts.roleUpdatedDesc', { role }));
     setShowRoleSelector(false);
   };
 
@@ -46,11 +49,12 @@ export const Navbar: React.FC<NavbarProps> = ({ activePageTitle }) => {
             <Waves className="w-5 h-5 text-white animate-pulse-slow" />
           </div>
           <div className="hidden sm:block">
-            <div className="flex items-center gap-1.5">
-              <span className="font-extrabold text-lg tracking-tight text-slate-100">Float<span className="text-cyan-400">Chat</span></span>
-              <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">Enterprise</span>
+            <div className="flex items-baseline gap-1">
+              <span className="font-extrabold text-lg tracking-tight text-white">ORCA </span>
+              <span className="font-extrabold text-lg tracking-tight text-cyan-400">Marine EcoSystem</span>
+              <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 ml-1.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">v2.4</span>
             </div>
-            <p className="text-[11px] text-slate-400 font-medium">ARGO Discovery Engine</p>
+            <p className="text-[10px] uppercase tracking-widest text-cyan-400/80 font-bold mt-0.5">ENTERPRISE V2.4 • OCEAN PLATFORM</p>
           </div>
         </a>
 
@@ -69,7 +73,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activePageTitle }) => {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search ocean floats, dataset SHA-256, SQL logs..."
+            placeholder={t('common.searchPlaceholder')}
             className="w-full pl-10 pr-4 py-2 rounded-xl text-xs glass-input placeholder-slate-400 focus:ring-2 focus:ring-cyan-500/40"
           />
           <kbd className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 bg-slate-800/80 px-1.5 py-0.5 rounded border border-slate-700 font-mono">⌘K</kbd>
@@ -77,16 +81,19 @@ export const Navbar: React.FC<NavbarProps> = ({ activePageTitle }) => {
       </div>
 
       {/* Right Actions */}
-      <div className="flex items-center gap-3">
-        {/* Interactive RBAC Quick Switcher Pill (Great for Demo!) */}
+      <div className="flex items-center gap-2.5 sm:gap-3">
+        {/* Language Selector Component */}
+        <LanguageSelector />
+
+        {/* Interactive RBAC Quick Switcher Pill */}
         <div className="relative">
           <button
             onClick={() => setShowRoleSelector(!showRoleSelector)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 transition-all text-xs font-medium text-slate-200"
-            title="Click to switch RBAC Role for live testing"
+            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 transition-all text-xs font-medium text-slate-200"
+            title={t('common.switchRole')}
           >
             <Shield className="w-3.5 h-3.5 text-cyan-400" />
-            <span className="hidden sm:inline text-slate-400">Role:</span>
+            <span className="hidden sm:inline text-slate-400">{t('common.role')}:</span>
             <RoleBadge role={user?.role || 'Researcher'} size="sm" />
             <ChevronDown className="w-3 h-3 text-slate-400" />
           </button>
@@ -99,8 +106,13 @@ export const Navbar: React.FC<NavbarProps> = ({ activePageTitle }) => {
                 exit={{ opacity: 0, y: 8 }}
                 className="absolute right-0 mt-2 w-48 rounded-xl glass-panel border border-slate-700/80 shadow-2xl p-2 z-50 space-y-1"
               >
-                <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                  Switch Active Role (RBAC)
+                <div className="px-2 py-1 flex items-center justify-between border-b border-slate-700/60 pb-1.5 mb-1">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    {t('common.switchRole')}
+                  </span>
+                  <span className="text-[9px] font-mono text-cyan-400 bg-cyan-500/10 px-1.5 py-0.5 rounded border border-cyan-500/20">
+                    Preview Mode
+                  </span>
                 </div>
                 {(Object.keys(ROLE_CONFIG) as UserRole[]).map((r) => (
                   <button
@@ -116,6 +128,9 @@ export const Navbar: React.FC<NavbarProps> = ({ activePageTitle }) => {
                     {user?.role === r && <CheckCheck className="w-3.5 h-3.5 text-cyan-400" />}
                   </button>
                 ))}
+                <div className="px-2 pt-1.5 border-t border-slate-700/60 text-[9px] text-slate-400 leading-tight">
+                  🔒 Backend permissions strictly enforced per account.
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
@@ -125,7 +140,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activePageTitle }) => {
         <button
           onClick={toggleTheme}
           className="p-2 rounded-xl bg-slate-800/60 hover:bg-slate-700/60 border border-slate-700/60 text-slate-300 hover:text-white transition-colors"
-          title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} mode`}
+          title={theme === 'dark' ? t('common.lightMode') : t('common.darkMode')}
         >
           {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-cyan-400" />}
         </button>
@@ -135,6 +150,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activePageTitle }) => {
           <button
             onClick={() => setShowNotifications(!showNotifications)}
             className="p-2 rounded-xl bg-slate-800/60 hover:bg-slate-700/60 border border-slate-700/60 text-slate-300 hover:text-white transition-colors relative"
+            title={t('common.notifications')}
           >
             <Bell className="w-4 h-4" />
             <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
@@ -150,7 +166,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activePageTitle }) => {
                 className="absolute right-0 mt-2 w-80 rounded-2xl glass-panel border border-slate-700/80 shadow-2xl p-4 z-50 space-y-3"
               >
                 <div className="flex items-center justify-between pb-2 border-b border-slate-700/50">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-200">System Alerts</h4>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-200">{t('common.notifications')}</h4>
                   <button 
                     onClick={() => addToast('info', 'Demo Alert', 'Triggered test system notification.')}
                     className="text-[11px] text-cyan-400 hover:underline flex items-center gap-1"
@@ -217,7 +233,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activePageTitle }) => {
                     onClick={() => setShowProfileMenu(false)}
                     className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl text-xs text-slate-300 hover:bg-slate-800 transition-colors"
                   >
-                    <Settings className="w-3.5 h-3.5 text-cyan-400" /> Account Settings
+                    <Settings className="w-3.5 h-3.5 text-cyan-400" /> {t('nav.settings')}
                   </a>
                   <button
                     onClick={() => {
@@ -227,7 +243,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activePageTitle }) => {
                     }}
                     className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-xl text-xs text-rose-400 hover:bg-rose-500/10 transition-colors"
                   >
-                    <LogOut className="w-3.5 h-3.5" /> Sign Out
+                    <LogOut className="w-3.5 h-3.5" /> {t('nav.signOut')}
                   </button>
                 </div>
               </motion.div>

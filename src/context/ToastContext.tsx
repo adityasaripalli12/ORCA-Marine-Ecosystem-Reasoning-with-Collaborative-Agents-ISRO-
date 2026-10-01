@@ -12,6 +12,7 @@ export type ToastType =
   | 'role_updated'
   | 'info'
   | 'error'
+  | 'success'
   | 'gov_success'
   | 'user_approved'
   | 'user_rejected'
@@ -36,7 +37,7 @@ const ToastContext = createContext<ToastContextType | undefined>(undefined);
 const defaultToastInfo: Record<ToastType, { title: string; defaultMsg: string; icon: any; color: string; border: string }> = {
   login_success: {
     title: 'Login Successful',
-    defaultMsg: 'JWT session authenticated. Welcome back to FloatChat Enterprise!',
+    defaultMsg: 'JWT session authenticated. Welcome back to ORCA Enterprise!',
     icon: CheckCircle2,
     color: 'text-emerald-400 bg-emerald-500/10',
     border: 'border-emerald-500/30'
@@ -96,6 +97,13 @@ const defaultToastInfo: Record<ToastType, { title: string; defaultMsg: string; i
     icon: XCircle,
     color: 'text-rose-400 bg-rose-500/10',
     border: 'border-rose-500/30'
+  },
+  success: {
+    title: 'Operation Successful',
+    defaultMsg: 'The action completed successfully.',
+    icon: CheckCircle2,
+    color: 'text-emerald-400 bg-emerald-500/10',
+    border: 'border-emerald-500/30'
   },
   gov_success: {
     title: 'Government Verification',

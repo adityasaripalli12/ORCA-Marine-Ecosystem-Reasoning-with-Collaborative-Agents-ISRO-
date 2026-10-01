@@ -14,6 +14,12 @@ class Dataset(Base):
     sha256_hash = Column(String, unique=True, index=True, nullable=False)
     upload_date = Column(DateTime, default=datetime.utcnow)
     uploaded_by = Column(String, nullable=False)
-    verification_status = Column(String, default="Verified") # Verified, Pending, Failed
+    verification_status = Column(String, default="Verified") # Verified, Pending, Failed, Invalid, Quarantined
+    duplicate_status = Column(String, default="Unique") # Unique, Duplicate, Possible Duplicate, Under Review, Invalid, Quarantined
+    content_fingerprint = Column(String, index=True, nullable=True)
+    similarity_score = Column(Float, nullable=True, default=0.0)
+    duplicate_of_id = Column(String, nullable=True)
     meta_data = Column(JSON, nullable=True) # Lat, Long, Temp, Salinity, Depth
+    ai_analysis = Column(JSON, nullable=True) # AI Confidence, validation flags, prompt injection checks
+    validation_details = Column(JSON, nullable=True) # Detailed integrity & structural verification report
     status = Column(String, default="Active")

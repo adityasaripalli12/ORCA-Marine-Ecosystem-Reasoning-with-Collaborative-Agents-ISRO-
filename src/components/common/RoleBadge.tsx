@@ -16,10 +16,12 @@ const SIZE = {
 
 /** Short display labels used when showFull is false */
 const SHORT_LABEL: Record<UserRole, string> = {
-  Admin:      'Administrator',
-  Government: 'Government',
-  Researcher: 'Researcher',
-  Student:    'Student',
+  Admin:          'Administrator',
+  Government:     'Government',
+  Researcher:     'Researcher',
+  Student:        'Student',
+  Shipping:       'Shipping',
+  'Coastal Guard': 'Coastal Guard',
 };
 
 export const RoleBadge: React.FC<RoleBadgeProps> = ({ role, size = 'md', showFull = false }) => {

@@ -1,11 +1,13 @@
 import React from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useTranslation } from '../../i18n';
 import { ROLE_CONFIG, UserRole } from '../../types';
 import { RoleBadge } from '../common/RoleBadge';
 import {
-  LayoutDashboard, MessageSquare, UploadCloud, Database,
+  LayoutDashboard, MessageSquare, MessagesSquare, UploadCloud, Database,
   BarChart3, ShieldCheck, FileSpreadsheet, Users,
-  Settings, LogOut, Lock, CheckCircle2
+  Settings, LogOut, Lock, CheckCircle2, Compass, AlertTriangle, Anchor,
+  ShieldAlert, Mic, Map, BookOpen, FileText, Activity, Sparkles
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -14,7 +16,8 @@ interface SidebarProps {
 
 /* ── Nav item definition ── */
 interface NavItem {
-  label: string;
+  i18nKey: string;
+  defaultLabel: string;
   path: string;
   icon: React.ElementType;
   /** Key that must appear in the role's navAccess list */
@@ -24,19 +27,36 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { key: 'dashboard',       label: 'Dashboard',         path: '#/dashboard',       icon: LayoutDashboard },
-  { key: 'ai-chat',         label: 'AI Chat',           path: '#/ai-chat',         icon: MessageSquare   },
-  { key: 'upload',          label: 'Upload Dataset',    path: '#/upload',          icon: UploadCloud     },
-  { key: 'datasets',        label: 'Dataset Manager',   path: '#/datasets',        icon: Database        },
-  { key: 'visualization',   label: 'Visualization',     path: '#/visualization',   icon: BarChart3       },
-  { key: 'security',        label: 'Security Dashboard',path: '#/security',        icon: ShieldCheck,    adminBadge: true },
-  { key: 'audit-logs',      label: 'Audit Logs',        path: '#/audit-logs',      icon: FileSpreadsheet,adminBadge: true },
-  { key: 'user-management', label: 'User Management',   path: '#/user-management', icon: Users,          adminBadge: true },
-  { key: 'settings',        label: 'Settings',          path: '#/settings',        icon: Settings        },
+  { key: 'dashboard',          i18nKey: 'nav.dashboard',          defaultLabel: 'Dashboard',             path: '#/dashboard',          icon: LayoutDashboard },
+  { key: 'ocean-intel',        i18nKey: 'nav.oceanIntel',         defaultLabel: 'Ocean Intelligence',    path: '#/dashboard#intel',    icon: Compass         },
+  { key: 'maritime-intel',      i18nKey: 'nav.maritimeIntel',      defaultLabel: 'Maritime Intelligence', path: '#/dashboard#maritime', icon: Anchor          },
+  { key: 'maritime-safety',     i18nKey: 'nav.maritimeSafety',     defaultLabel: 'Maritime Safety',       path: '#/dashboard#safety',   icon: ShieldAlert     },
+  { key: 'ocean-assistant',     i18nKey: 'nav.oceanAssistant',     defaultLabel: 'Ocean Assistant',       path: '#/dashboard#assistant',icon: Sparkles       },
+  { key: 'learn-ocean',        i18nKey: 'nav.learnOcean',         defaultLabel: 'Learn Ocean Data',      path: '#/dashboard#learn',    icon: BookOpen        },
+  { key: 'flowchat-ai',        i18nKey: 'nav.flowchatAi',        defaultLabel: 'ORCA AI',           path: '#/flowchat-ai',        icon: MessageSquare   },
+  { key: 'research-chat',      i18nKey: 'nav.researchChat',      defaultLabel: 'Research Chat',         path: '#/research-chat',      icon: MessagesSquare  },
+  { key: 'upload',             i18nKey: 'nav.upload',            defaultLabel: 'Upload Dataset',        path: '#/upload',             icon: UploadCloud     },
+  { key: 'datasets',           i18nKey: 'nav.datasets',          defaultLabel: 'Dataset Manager',       path: '#/datasets',           icon: Database        },
+  { key: 'visualization',      i18nKey: 'nav.visualization',     defaultLabel: 'Visualization',         path: '#/visualization',      icon: BarChart3       },
+  { key: 'sea-conditions',     i18nKey: 'nav.seaConditions',      defaultLabel: 'Sea Conditions',        path: '#/dashboard#sea',      icon: Activity        },
+  { key: 'ocean-conditions',   i18nKey: 'nav.oceanConditions',    defaultLabel: 'Ocean Conditions',      path: '#/dashboard#conditions',icon: Activity       },
+  { key: 'regional-analysis',  i18nKey: 'nav.regionalAnalysis',   defaultLabel: 'Regional Analysis',     path: '#/visualization',      icon: Compass         },
+  { key: 'operational-map',    i18nKey: 'nav.operationalMap',     defaultLabel: 'Operational Map',       path: '#/visualization',      icon: Map             },
+  { key: 'ocean-map',          i18nKey: 'nav.oceanMap',           defaultLabel: 'Ocean Map',             path: '#/dashboard#map',      icon: Map             },
+  { key: 'safety',             i18nKey: 'nav.safety',             defaultLabel: 'Safety',                path: '#/dashboard#safety',   icon: ShieldAlert     },
+  { key: 'alerts',             i18nKey: 'nav.alerts',             defaultLabel: 'Alerts',                path: '#/dashboard#alerts',   icon: AlertTriangle   },
+  { key: 'coastal-alerts',     i18nKey: 'nav.coastalAlerts',      defaultLabel: 'Coastal Alerts',        path: '#/dashboard#alerts',   icon: AlertTriangle   },
+  { key: 'voice-assistant',    i18nKey: 'nav.voiceAssistant',     defaultLabel: 'Voice Assistant',       path: '#/dashboard#voice',    icon: Mic             },
+  { key: 'reports',            i18nKey: 'nav.reports',            defaultLabel: 'Reports',               path: '#/dashboard#reports',  icon: FileText        },
+  { key: 'security',           i18nKey: 'nav.security',           defaultLabel: 'Security Dashboard',    path: '#/security',           icon: ShieldCheck,    adminBadge: true },
+  { key: 'audit-logs',         i18nKey: 'nav.auditLogs',          defaultLabel: 'Audit Logs',            path: '#/audit-logs',         icon: FileSpreadsheet,adminBadge: true },
+  { key: 'user-management',    i18nKey: 'nav.userManagement',     defaultLabel: 'User Management',       path: '#/user-management',    icon: Users,          adminBadge: true },
+  { key: 'settings',           i18nKey: 'nav.settings',           defaultLabel: 'Settings',              path: '#/settings',           icon: Settings        },
 ];
 
 export const Sidebar: React.FC<SidebarProps> = ({ currentPath }) => {
   const { user, logout } = useAuth();
+  const { t } = useTranslation();
   const role = (user?.role ?? 'Student') as UserRole;
   const cfg  = ROLE_CONFIG[role];
   const allowed = cfg.navAccess as readonly string[];
@@ -54,7 +74,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPath }) => {
               {cfg.emoji}
             </div>
             <div className="min-w-0">
-              <p className={`text-[11px] font-bold truncate ${cfg.textClass}`}>{cfg.label}</p>
+              <p className={`text-[11px] font-bold truncate ${cfg.textClass}`}>{t(`roles.${role}`, {}, cfg.label)}</p>
               <p className="text-[10px] text-slate-500 truncate">{user?.email}</p>
             </div>
           </div>
@@ -73,8 +93,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPath }) => {
         {/* ── Navigation ── */}
         <div>
           <div className="px-3 mb-2 flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-500">
-            <span>Navigation</span>
-            <span className={`font-mono ${cfg.textClass}`}>RBAC</span>
+            <span>{t('nav.navigation')}</span>
+            <span className={`font-mono ${cfg.textClass}`}>{t('nav.rbac')}</span>
           </div>
 
           <nav className="space-y-1">
@@ -95,10 +115,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPath }) => {
                   }`}
                 >
                   <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-slate-400'}`} />
-                  <span>{item.label}</span>
+                  <span>{t(item.i18nKey, {}, item.defaultLabel)}</span>
                   {item.adminBadge && (
                     <span className="ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30">
-                      ADMIN
+                      {t('nav.adminBadge')}
                     </span>
                   )}
                 </a>
@@ -112,10 +132,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPath }) => {
           <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800/80 space-y-1.5">
             <div className="flex items-center gap-2 text-xs font-semibold text-slate-300">
               <Lock className="w-3.5 h-3.5 text-amber-400" />
-              <span>Restricted Access</span>
+              <span>{t('nav.restrictedAccess')}</span>
             </div>
             <p className="text-[10px] text-slate-500 leading-relaxed">
-              Some menus are hidden based on your role permissions. Contact your System Administrator to request elevated access.
+              {t('nav.restrictedDesc')}
             </p>
             <div className="pt-1">
               <RoleBadge role={role} size="sm" showFull />
@@ -134,7 +154,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPath }) => {
           className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium text-rose-400 hover:bg-rose-500/10 transition-colors"
         >
           <LogOut className="w-4 h-4" />
-          <span>Sign Out</span>
+          <span>{t('nav.signOut')}</span>
         </button>
       </div>
     </aside>

@@ -1,14 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
-import { UserRole } from '../types';
+import { UserRole, ROLE_CONFIG } from '../types';
 import {
   Waves, Eye, EyeOff, ShieldCheck, Lock, Mail,
   ArrowRight, KeyRound, CheckSquare, Square,
   CheckCircle2, XCircle, AlertTriangle, Loader2,
-  Shield, Zap, Globe, X
+  Shield, Zap, X, Fingerprint
 } from 'lucide-react';
-import { ROLE_CONFIG } from '../types';
 import { motion, AnimatePresence } from 'framer-motion';
 
 /* ──────────────────────────────────────────────────────
@@ -52,7 +51,6 @@ const RuleItem: React.FC<{ passed: boolean; label: string }> = ({ passed, label 
   </div>
 );
 
-/* Animated wave SVG rows used in the left panel */
 const WaveRow: React.FC<{ delay?: number; opacity?: number }> = ({ delay = 0, opacity = 0.15 }) => (
   <motion.div
     animate={{ x: [0, -60, 0] }}
@@ -70,7 +68,6 @@ const WaveRow: React.FC<{ delay?: number; opacity?: number }> = ({ delay = 0, op
   </motion.div>
 );
 
-/* Floating particle orb */
 const Orb: React.FC<{ style: React.CSSProperties }> = ({ style }) => (
   <motion.div
     animate={{ y: [-12, 12, -12], opacity: [0.5, 1, 0.5] }}
@@ -80,7 +77,6 @@ const Orb: React.FC<{ style: React.CSSProperties }> = ({ style }) => (
   />
 );
 
-/* Modal overlay */
 const Modal: React.FC<{ children: React.ReactNode; onClose: () => void }> = ({ children, onClose }) => (
   <motion.div
     initial={{ opacity: 0 }}
@@ -103,13 +99,15 @@ const Modal: React.FC<{ children: React.ReactNode; onClose: () => void }> = ({ c
 );
 
 /* ──────────────────────────────────────────────────────
-   Main LoginPage component
+   Main LoginPage Component
 ────────────────────────────────────────────────────── */
 export const LoginPage: React.FC = () => {
-  const { login } = useAuth();
+  const {
+    login,
+  } = useAuth();
   const { addToast } = useToast();
 
-  /* ── form state ── */
+  /* ── Form State ── */
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<UserRole | ''>('');
@@ -120,30 +118,22 @@ export const LoginPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [shake, setShake] = useState(false);
 
-  /* ── demo typing state ── */
+  /* ── Demo Typing State ── */
   const [activeDemo, setActiveDemo] = useState<string | null>(null);
   const [isTyping, setIsTyping] = useState(false);
 
-  /* ── clear form on mount (prevent browser autofill persistence) ── */
-  useEffect(() => {
-    setEmail('');
-    setPassword('');
-    setRole('');
-    setRememberMe(false);
-  }, []);
-
-  /* ── modal state ── */
-  type ModalKind = 'error' | 'success' | 'disabled' | 'forgot' | null;
+  /* ── Modal State ── */
+  type ModalKind = 'error' | 'success' | 'forgot' | null;
   const [modal, setModal] = useState<ModalKind>(null);
   const [modalMsg, setModalMsg] = useState('');
 
-  /* ── field-level errors ── */
+  /* ── Field-level Errors ── */
   const [emailError, setEmailError] = useState('');
   const [pwdError, setPwdError] = useState('');
 
   const pwdRules = evaluatePassword(password);
 
-  /* ── Caps-Lock detection ── */
+  /* ── Caps-Lock Detection ── */
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     setCapsLock(e.getModifierState?.('CapsLock') ?? false);
   }, []);
@@ -152,46 +142,35 @@ export const LoginPage: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleKeyDown]);
 
-  /* ── typing animation helper ── */
-  const typeValue = async (
-    setter: (v: string) => void,
-    target: string,
-    speed = 80
-  ) => {
+  /* ── Typing Animation Helper ── */
+  const typeValue = async (setter: (v: string) => void, target: string, speed = 40) => {
     setter('');
     for (let i = 0; i <= target.length; i++) {
       setter(target.slice(0, i));
-      await new Promise(r => setTimeout(r, speed));
+      await new Promise((r) => setTimeout(r, speed));
     }
   };
 
-  const typeCredentials = async (acc: {
-    email: string;
-    pass: string;
-    r: UserRole;
-    key: string;
-  }) => {
+  const typeCredentials = async (acc: { email: string; pass: string; r: UserRole; key: string }) => {
     if (isTyping) return;
     setActiveDemo(acc.key);
     setIsTyping(true);
     setEmailError('');
     setPwdError('');
-    // type email then password, then instantly set role
-    await typeValue(setEmail, acc.email, 60);
-    await typeValue(setPassword, acc.pass, 80);
+    await typeValue(setEmail, acc.email, 35);
+    await typeValue(setPassword, acc.pass, 45);
     setRole(acc.r);
     setIsTyping(false);
   };
 
-  /* ── submit handler ── */
-  const isFormReady = email.trim() !== '' && password !== '' && role !== '';
+  /* ── Submit Username / Password Handler ── */
+  const isFormReady = email.trim() !== '' && password !== '';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setEmailError('');
     setPwdError('');
 
-    // Email validation
     if (!email.trim()) {
       setEmailError('Email is required.');
       return;
@@ -200,95 +179,55 @@ export const LoginPage: React.FC = () => {
       setEmailError('Please enter a valid email address.');
       return;
     }
-
-    // Password validation
     if (!password) {
       setPwdError('Password is required.');
       return;
     }
 
-    // Demo Accounts definition
-    const DEMO_ACCOUNTS: Record<string, { pass: string; role: UserRole; label: string }> = {
-      'admin@gmail.com':    { pass: 'Admin@123',    role: 'Admin',      label: 'System Administrator' },
-      'student@gmail.com':  { pass: 'Student@123',  role: 'Student',    label: 'Student / Public Access' },
-      'research@gmail.com': { pass: 'Research@123', role: 'Researcher', label: 'Research Scientist' },
-      'govp@gmail.com':     { pass: 'Gov@123',      role: 'Government', label: 'Government Agency' },
-    };
-
-    const targetAccount = DEMO_ACCOUNTS[email.trim().toLowerCase()];
-
-    // Simulate loading & auth
     setIsLoading(true);
-    await new Promise((r) => setTimeout(r, 1000));
-    setIsLoading(false);
-
-    if (targetAccount) {
-      if (password !== targetAccount.pass) {
-        setShake(true);
-        setTimeout(() => setShake(false), 600);
-        setModal('error');
-        setModalMsg(`Incorrect password for ${email}. Please use ${targetAccount.pass} for demo.`);
-        return;
-      }
-      const finalRole = targetAccount.role;
-      login(email, finalRole);
-      addToast('login_success', 'JWT Session Authenticated', `Logged in as ${email} (${finalRole})`);
+    try {
+      await login(email.trim(), password, role || undefined);
+      setIsLoading(false);
+      addToast('login_success', 'Authenticated Successfully', `Welcome back, ${email.trim()}`);
       setModal('success');
       setTimeout(() => {
         window.location.hash = '#/dashboard';
-      }, 1500);
-      return;
+      }, 800);
+    } catch (err: any) {
+      setIsLoading(false);
+      setShake(true);
+      setTimeout(() => setShake(false), 600);
+      setModal('error');
+      setModalMsg(err.message || 'Invalid email or password');
     }
-
-    if (!isPasswordValid(pwdRules)) {
-      setPwdError('Password must meet all security requirements listed above.');
-      return;
-    }
-
-    login(email, role as UserRole);
-    addToast('login_success', 'JWT Session Authenticated', `Logged in as ${email} (${role})`);
-    setModal('success');
-    setTimeout(() => {
-      window.location.hash = '#/dashboard';
-    }, 1500);
   };
 
-  /* ── forgot password ── */
   const handleForgotPassword = () => {
     setModal('forgot');
-    addToast('info', 'Password Reset', 'Password reset link sent to your email.');
   };
 
-  /* ──────────────────────────────────────────────────────
-     Render
-  ────────────────────────────────────────────────────── */
   return (
     <div className="min-h-screen flex overflow-hidden bg-[#030918] selection:bg-cyan-500 selection:text-white">
 
       {/* ═══════════════════════════════════════════════
-          LEFT PANEL — animated ocean illustration
+          LEFT PANEL — Animated ocean illustration
       ═══════════════════════════════════════════════ */}
-      <div className="hidden lg:flex flex-col justify-between w-[55%] relative overflow-hidden bg-gradient-to-br from-[#030c1e] via-[#041830] to-[#061e40]">
-
-        {/* Background deep-ocean glow blobs */}
+      <div className="hidden lg:flex flex-col justify-between w-[52%] relative overflow-hidden bg-gradient-to-br from-[#030c1e] via-[#041830] to-[#061e40]">
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute top-[-10%] left-[-10%] w-[70%] h-[70%] rounded-full bg-cyan-600/10 blur-[120px]" />
           <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] rounded-full bg-blue-700/10 blur-[140px]" />
         </div>
 
-        {/* Animated floating orbs */}
         <Orb style={{ top: '15%', left: '12%', width: 14, height: 14, background: 'rgba(56,189,248,0.55)', boxShadow: '0 0 24px 6px rgba(56,189,248,0.3)' }} />
         <Orb style={{ top: '40%', left: '70%', width: 10, height: 10, background: 'rgba(6,182,212,0.5)', boxShadow: '0 0 18px 4px rgba(6,182,212,0.25)' }} />
         <Orb style={{ top: '65%', left: '30%', width: 8, height: 8, background: 'rgba(34,211,238,0.6)', boxShadow: '0 0 16px 4px rgba(34,211,238,0.2)' }} />
         <Orb style={{ top: '80%', left: '75%', width: 12, height: 12, background: 'rgba(56,189,248,0.45)', boxShadow: '0 0 20px 5px rgba(56,189,248,0.2)' }} />
 
-        {/* Grid dots overlay */}
         <div
           className="absolute inset-0 opacity-[0.04]"
           style={{ backgroundImage: 'radial-gradient(#38bdf8 1px, transparent 1px)', backgroundSize: '32px 32px' }}
         />
 
-        {/* Ocean wave rows (bottom portion) */}
         <div className="absolute bottom-0 left-0 right-0 h-64 overflow-hidden">
           <div className="relative w-full h-full">
             <WaveRow delay={0} opacity={0.18} />
@@ -297,10 +236,7 @@ export const LoginPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Content */}
         <div className="relative z-10 flex flex-col justify-center flex-1 px-16 py-20 space-y-10">
-
-          {/* Logo mark */}
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -312,15 +248,14 @@ export const LoginPage: React.FC = () => {
             </div>
             <div>
               <span className="text-2xl font-extrabold text-white tracking-tight">
-                Float<span className="text-cyan-400">Chat</span>
+                ORCA <span className="text-cyan-400">Marine EcoSystem</span>
               </span>
               <div className="text-[10px] uppercase tracking-widest text-cyan-400/70 font-bold mt-0.5">
-                Enterprise v2.4
+                ENTERPRISE V2.4 • OCEAN PLATFORM
               </div>
             </div>
           </motion.div>
 
-          {/* Hero headline */}
           <motion.div
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
@@ -335,14 +270,13 @@ export const LoginPage: React.FC = () => {
               Discovery
             </h1>
             <p className="text-sm text-slate-400 leading-relaxed max-w-xs">
-              Query millions of ARGO ocean profiles with natural language. Instant SQL generation, real-time telemetry, enterprise security.
+              Query millions of ARGO ocean profiles with natural language. Pre-upload SHA-256 duplicate validation and role-based access control.
             </p>
             <p className="text-xs font-bold tracking-widest text-cyan-400/80 uppercase">
-              Secure&nbsp;•&nbsp;Intelligent&nbsp;•&nbsp;Reliable
+              Secure • Verified • Zero-Trust
             </p>
           </motion.div>
 
-          {/* Feature pills */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -350,9 +284,9 @@ export const LoginPage: React.FC = () => {
             className="flex flex-col gap-3"
           >
             {[
-              { icon: Shield,  label: 'JWT + SHA-256 Security',       sub: 'Zero-trust enterprise auth' },
-              { icon: Zap,     label: 'Groq LLM RAG Pipeline',        sub: 'Natural language to SQL in <150ms' },
-              { icon: Globe,   label: '1.4M+ ARGO Ocean Profiles',    sub: 'Global float array telemetry' },
+              { icon: Shield, label: 'Role-Based Authorization', sub: 'Server-side access control for Admin, Govt & Researchers' },
+              { icon: Lock, label: 'Secure Password Authentication', sub: 'Argon2 & Bcrypt encrypted credential verification' },
+              { icon: Zap, label: 'SHA-256 Pre-Upload Security', sub: 'Exact & near-duplicate dataset prevention' },
             ].map(({ icon: Icon, label, sub }) => (
               <div key={label} className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm">
                 <div className="w-8 h-8 rounded-lg bg-cyan-500/15 border border-cyan-500/20 flex items-center justify-center shrink-0">
@@ -367,14 +301,13 @@ export const LoginPage: React.FC = () => {
           </motion.div>
         </div>
 
-        {/* Bottom: security badges */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.5 }}
           className="relative z-10 px-16 pb-10 flex items-center gap-4 flex-wrap"
         >
-          {['TLS 1.3', 'JWT Auth', 'SOC 2', 'GDPR Ready', 'ISO 27001'].map((b) => (
+          {['SHA-256 Checksum', 'Role-Based RBAC', 'SOC 2', 'ISO 27001'].map((b) => (
             <span key={b} className="text-[10px] font-bold text-slate-500 uppercase tracking-wider px-2.5 py-1 rounded-lg bg-white/[0.04] border border-white/[0.07]">
               {b}
             </span>
@@ -383,11 +316,9 @@ export const LoginPage: React.FC = () => {
       </div>
 
       {/* ═══════════════════════════════════════════════
-          RIGHT PANEL — glass login card
+          RIGHT PANEL — Clean Login Card
       ═══════════════════════════════════════════════ */}
       <div className="flex-1 flex items-center justify-center p-6 relative overflow-hidden">
-
-        {/* Background glow */}
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute top-[-20%] right-[-10%] w-[60%] h-[60%] rounded-full bg-cyan-600/8 blur-[120px]" />
           <div className="absolute bottom-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full bg-blue-700/8 blur-[120px]" />
@@ -404,10 +335,8 @@ export const LoginPage: React.FC = () => {
             transition={{ duration: 0.5 }}
             className="rounded-3xl border border-white/[0.1] bg-white/[0.04] backdrop-blur-2xl shadow-[0_32px_80px_-12px_rgba(0,0,0,0.8)] p-8 space-y-6"
           >
-
-            {/* ── Card header ── */}
+            {/* Header */}
             <div className="text-center space-y-4">
-              {/* Logo icon */}
               <div className="relative mx-auto w-fit">
                 <motion.div
                   animate={{ y: [0, -6, 0] }}
@@ -416,7 +345,6 @@ export const LoginPage: React.FC = () => {
                 >
                   <Waves className="w-8 h-8 text-white" />
                 </motion.div>
-                {/* Live pulse dot */}
                 <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                   <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500" />
@@ -430,18 +358,14 @@ export const LoginPage: React.FC = () => {
                 <p className="text-xs text-slate-400 mt-1">Please sign in to continue</p>
               </div>
 
-              {/* Secure badge */}
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-[11px] font-bold text-emerald-400">
                 <ShieldCheck className="w-3.5 h-3.5" />
-                🔒 Secure Login • JWT v2.4
+                Secure Login
               </div>
-
-
             </div>
 
-            {/* ── Form ── */}
+            {/* Form */}
             <form onSubmit={handleSubmit} noValidate className="space-y-4">
-
               {/* Email */}
               <div className="space-y-1.5">
                 <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
@@ -452,7 +376,7 @@ export const LoginPage: React.FC = () => {
                   <input
                     id="login-email"
                     type="email"
-                    autoComplete="off"
+                    autoComplete="email"
                     value={email}
                     onChange={(e) => { setEmail(e.target.value); setEmailError(''); }}
                     placeholder="Enter your email address"
@@ -493,7 +417,7 @@ export const LoginPage: React.FC = () => {
                   <input
                     id="login-password"
                     type={showPassword ? 'text' : 'password'}
-                    autoComplete="off"
+                    autoComplete="current-password"
                     value={password}
                     onChange={(e) => { setPassword(e.target.value); setPwdError(''); }}
                     onFocus={() => setPwdFocused(true)}
@@ -511,35 +435,18 @@ export const LoginPage: React.FC = () => {
                   </button>
                 </div>
 
-                {/* Caps-lock warning */}
-                <AnimatePresence>
-                  {capsLock && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -4 }}
-                      className="flex items-center gap-1.5 text-[11px] text-amber-400 font-semibold"
-                    >
-                      <AlertTriangle className="w-3.5 h-3.5" /> ⚠ Caps Lock is ON
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                {capsLock && (
+                  <div className="flex items-center gap-1.5 text-[11px] text-amber-400 font-semibold">
+                    <AlertTriangle className="w-3.5 h-3.5" /> ⚠ Caps Lock is ON
+                  </div>
+                )}
 
-                {/* Field-level error */}
-                <AnimatePresence>
-                  {pwdError && (
-                    <motion.p
-                      initial={{ opacity: 0, y: -4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -4 }}
-                      className="text-[11px] text-rose-400 flex items-center gap-1.5"
-                    >
-                      <XCircle className="w-3 h-3" /> {pwdError}
-                    </motion.p>
-                  )}
-                </AnimatePresence>
+                {pwdError && (
+                  <p className="text-[11px] text-rose-400 flex items-center gap-1.5">
+                    <XCircle className="w-3 h-3" /> {pwdError}
+                  </p>
+                )}
 
-                {/* Live password requirements panel */}
                 <AnimatePresence>
                   {(pwdFocused || (password.length > 0 && !isPasswordValid(pwdRules))) && (
                     <motion.div
@@ -549,10 +456,10 @@ export const LoginPage: React.FC = () => {
                       className="overflow-hidden"
                     >
                       <div className="mt-2 p-3 rounded-xl bg-slate-900/60 border border-white/[0.07] grid grid-cols-2 gap-1.5">
-                        <RuleItem passed={pwdRules.minLength}  label="Min 8 characters" />
-                        <RuleItem passed={pwdRules.hasUpper}   label="Uppercase letter" />
-                        <RuleItem passed={pwdRules.hasLower}   label="Lowercase letter" />
-                        <RuleItem passed={pwdRules.hasNumber}  label="One number" />
+                        <RuleItem passed={pwdRules.minLength} label="Min 8 characters" />
+                        <RuleItem passed={pwdRules.hasUpper} label="Uppercase letter" />
+                        <RuleItem passed={pwdRules.hasLower} label="Lowercase letter" />
+                        <RuleItem passed={pwdRules.hasNumber} label="One number" />
                         <RuleItem passed={pwdRules.hasSpecial} label="Special character" />
                       </div>
                     </motion.div>
@@ -560,14 +467,14 @@ export const LoginPage: React.FC = () => {
                 </AnimatePresence>
               </div>
 
-              {/* Role selector */}
+              {/* Access Role Selector */}
               <div className="space-y-1.5">
                 <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
                   Access Role
                 </label>
                 <select
+                  id="login-role"
                   value={role}
-                  autoComplete="off"
                   onChange={(e) => setRole(e.target.value as UserRole)}
                   className={`w-full px-3 py-2.5 rounded-xl text-xs bg-white/[0.05] border border-white/[0.08] focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/25 focus:outline-none transition-all appearance-none ${
                     role === '' ? 'text-slate-500' : 'text-slate-100'
@@ -582,7 +489,7 @@ export const LoginPage: React.FC = () => {
                 </select>
               </div>
 
-              {/* Remember me */}
+              {/* Remember Me */}
               <div className="flex items-center justify-between">
                 <button
                   type="button"
@@ -594,27 +501,18 @@ export const LoginPage: React.FC = () => {
                     : <Square className="w-4 h-4 text-slate-600" />}
                   Remember me (30 days)
                 </button>
-                <span className="text-[10px] text-slate-600 font-mono">Rate-limit: 5 req/min</span>
+                <span className="text-[10px] text-slate-600 font-mono">Rate-limit: 20 req/min</span>
               </div>
 
-              {/* Submit button */}
+              {/* Submit Button */}
               <motion.button
                 type="submit"
                 disabled={isLoading || !isFormReady}
                 whileHover={{ scale: (isLoading || !isFormReady) ? 1 : 1.015 }}
                 whileTap={{ scale: (isLoading || !isFormReady) ? 1 : 0.985 }}
-                className="relative w-full py-3 rounded-xl font-bold text-sm text-white overflow-hidden transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                className="relative w-full py-3 rounded-xl font-bold text-sm text-white overflow-hidden transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-xl shadow-cyan-500/20 cursor-pointer"
                 style={{ background: 'linear-gradient(135deg, #0284c7 0%, #38bdf8 50%, #06b6d4 100%)' }}
               >
-                {/* Sheen sweep */}
-                {!isLoading && (
-                  <motion.div
-                    initial={{ x: '-100%' }}
-                    whileHover={{ x: '200%' }}
-                    transition={{ duration: 0.55 }}
-                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent pointer-events-none"
-                  />
-                )}
                 <span className="relative flex items-center justify-center gap-2">
                   {isLoading ? (
                     <>
@@ -623,7 +521,7 @@ export const LoginPage: React.FC = () => {
                     </>
                   ) : (
                     <>
-                      Sign In to FloatChat
+                      Sign In to ORCA Marine EcoSystem
                       <ArrowRight className="w-4 h-4" />
                     </>
                   )}
@@ -631,82 +529,91 @@ export const LoginPage: React.FC = () => {
               </motion.button>
             </form>
 
-            {/* ─────────────────────────────
-                QUICK DEMO ACCESS SECTION
-            ───────────────────────────── */}
-            <div className="space-y-3">
-              {/* Header */}
+            {/* Quick Demo Access Section */}
+            <div className="space-y-3 pt-2">
               <div className="flex items-center gap-3">
                 <div className="flex-1 h-px bg-white/[0.07]" />
                 <div className="text-center">
                   <p className="text-[10px] font-extrabold uppercase tracking-widest text-cyan-400">
                     ⚡ Quick Demo Access
                   </p>
-                  <p className="text-[9px] text-slate-600 mt-0.5 font-medium tracking-wide">
-                    Smart India Hackathon — Demonstration Only
-                  </p>
                 </div>
                 <div className="flex-1 h-px bg-white/[0.07]" />
               </div>
 
-              {/* Demo Cards Grid */}
               <div className="grid grid-cols-2 gap-2">
                 {([
                   {
                     key: 'admin',
                     emoji: '🛡',
                     title: 'System Administrator',
-                    shortTitle: 'Administrator',
                     email: 'admin@gmail.com',
                     pass: 'Admin@123',
                     r: 'Admin' as UserRole,
-                    label: 'Login as Administrator',
+                    label: 'Login as Admin',
                     accent: 'from-rose-500/20 to-rose-600/10 border-rose-500/30 hover:border-rose-400/60',
                     accentActive: 'from-rose-500/35 to-rose-600/25 border-rose-400/70 shadow-rose-500/20',
-                    badgeColor: 'bg-rose-500/20 text-rose-300 border-rose-500/30',
                     btnColor: 'from-rose-600 to-rose-500',
                   },
                   {
                     key: 'govt',
                     emoji: '🏛',
                     title: 'Government Agency',
-                    shortTitle: 'Government',
                     email: 'govp@gmail.com',
                     pass: 'Gov@123',
                     r: 'Government' as UserRole,
-                    label: 'Login as Government',
+                    label: 'Login as Govt',
                     accent: 'from-emerald-500/20 to-emerald-600/10 border-emerald-500/30 hover:border-emerald-400/60',
                     accentActive: 'from-emerald-500/35 to-emerald-600/25 border-emerald-400/70 shadow-emerald-500/20',
-                    badgeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
                     btnColor: 'from-emerald-600 to-emerald-500',
                   },
                   {
                     key: 'researcher',
                     emoji: '🔬',
                     title: 'Research Scientist',
-                    shortTitle: 'Researcher',
                     email: 'research@gmail.com',
                     pass: 'Research@123',
                     r: 'Researcher' as UserRole,
                     label: 'Login as Researcher',
                     accent: 'from-blue-500/20 to-blue-600/10 border-blue-500/30 hover:border-blue-400/60',
                     accentActive: 'from-blue-500/35 to-blue-600/25 border-blue-400/70 shadow-blue-500/20',
-                    badgeColor: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
                     btnColor: 'from-blue-600 to-blue-500',
                   },
                   {
                     key: 'student',
                     emoji: '🎓',
-                    title: 'Student / Public Access',
-                    shortTitle: 'Student',
+                    title: 'Student Access',
                     email: 'student@gmail.com',
                     pass: 'Student@123',
                     r: 'Student' as UserRole,
                     label: 'Login as Student',
                     accent: 'from-purple-500/20 to-purple-600/10 border-purple-500/30 hover:border-purple-400/60',
                     accentActive: 'from-purple-500/35 to-purple-600/25 border-purple-400/70 shadow-purple-500/20',
-                    badgeColor: 'bg-purple-500/20 text-purple-300 border-purple-500/30',
                     btnColor: 'from-purple-600 to-purple-500',
+                  },
+                  {
+                    key: 'shipping',
+                    emoji: '🚢',
+                    title: 'Shipping Maritime',
+                    email: 'shipping@gmail.com',
+                    pass: 'Shipping@123',
+                    r: 'Shipping' as UserRole,
+                    label: 'Login as Shipping',
+                    accent: 'from-amber-500/20 to-amber-600/10 border-amber-500/30 hover:border-amber-400/60',
+                    accentActive: 'from-amber-500/35 to-amber-600/25 border-amber-400/70 shadow-amber-500/20',
+                    btnColor: 'from-amber-600 to-amber-500',
+                  },
+                  {
+                    key: 'coastguard',
+                    emoji: '🛡️',
+                    title: 'Coastal Guard',
+                    email: 'coastguard@gmail.com',
+                    pass: 'CoastGuard@123',
+                    r: 'Coastal Guard' as UserRole,
+                    label: 'Login as Coastal Guard',
+                    accent: 'from-orange-500/20 to-orange-600/10 border-orange-500/30 hover:border-orange-400/60',
+                    accentActive: 'from-orange-500/35 to-orange-600/25 border-orange-400/70 shadow-orange-500/20',
+                    btnColor: 'from-orange-600 to-orange-500',
                   },
                 ] as const).map((acc) => {
                   const isActive = activeDemo === acc.key;
@@ -718,55 +625,24 @@ export const LoginPage: React.FC = () => {
                       onClick={() => typeCredentials(acc)}
                       whileHover={{ scale: isTyping ? 1 : 1.025, y: isTyping ? 0 : -1 }}
                       whileTap={{ scale: isTyping ? 1 : 0.97 }}
-                      className={`relative rounded-2xl p-3 text-left border bg-gradient-to-br transition-all duration-300 overflow-hidden shadow-lg ${
-                        isActive
-                          ? `${acc.accentActive} shadow-lg`
-                          : `${acc.accent} shadow-sm`
+                      className={`relative rounded-2xl p-3 text-left border bg-gradient-to-br transition-all duration-300 overflow-hidden shadow-lg cursor-pointer ${
+                        isActive ? `${acc.accentActive} shadow-lg` : `${acc.accent} shadow-sm`
                       } disabled:opacity-60 disabled:cursor-wait`}
                     >
-                      {/* Active glow pulse */}
-                      {isActive && (
-                        <motion.div
-                          className="absolute inset-0 rounded-2xl pointer-events-none"
-                          animate={{ opacity: [0.3, 0.7, 0.3] }}
-                          transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
-                          style={{ background: 'radial-gradient(ellipse at 50% 0%, rgba(255,255,255,0.08), transparent 70%)' }}
-                        />
-                      )}
-
-                      {/* Card content */}
-                      <div className="relative z-10 space-y-2">
-                        {/* Emoji + role badge */}
+                      <div className="relative z-10 space-y-1.5">
                         <div className="flex items-start justify-between gap-1">
                           <span className="text-xl leading-none">{acc.emoji}</span>
                           {isActive && isTyping && (
-                            <motion.span
-                              initial={{ opacity: 0, scale: 0.8 }}
-                              animate={{ opacity: 1, scale: 1 }}
-                              className="text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-white/10 text-white border border-white/20"
-                            >
+                            <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-white/10 text-white">
                               Typing…
-                            </motion.span>
-                          )}
-                          {isActive && !isTyping && (
-                            <motion.span
-                              initial={{ opacity: 0, scale: 0.8 }}
-                              animate={{ opacity: 1, scale: 1 }}
-                              className="text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
-                            >
-                              ✓ Ready
-                            </motion.span>
+                            </span>
                           )}
                         </div>
-
-                        {/* Title */}
                         <div>
                           <p className="text-[10px] font-extrabold text-white leading-tight">{acc.title}</p>
                           <p className="text-[9px] text-slate-500 font-mono mt-0.5 truncate">{acc.email}</p>
                         </div>
-
-                        {/* CTA */}
-                        <div className={`w-full py-1.5 rounded-lg text-[9px] font-bold text-white text-center bg-gradient-to-r ${acc.btnColor} transition-opacity`}>
+                        <div className={`w-full py-1 rounded-lg text-[8px] font-bold text-white text-center bg-gradient-to-r ${acc.btnColor}`}>
                           {acc.label}
                         </div>
                       </div>
@@ -774,38 +650,33 @@ export const LoginPage: React.FC = () => {
                   );
                 })}
               </div>
-
-              {/* Hint line */}
-              <p className="text-center text-[9px] text-slate-600">
-                Click a card to auto-fill credentials → then click <span className="text-cyan-500 font-semibold">Sign In to FloatChat</span>
-              </p>
             </div>
 
-            {/* ── Footer ── */}
+            {/* Footer */}
             <div className="pt-4 border-t border-white/[0.07] text-center space-y-4">
               <div className="space-y-1">
                 <p className="text-[11px] text-slate-500">Don't have an account?</p>
-                <a href="#/register"
-                  className="inline-flex items-center gap-1.5 text-[11px] font-bold text-cyan-400 hover:text-cyan-300 transition-colors">
-                  Create FloatChat Account <ArrowRight className="w-3.5 h-3.5" />
+                <a
+                  href="#/register"
+                  className="inline-flex items-center gap-1.5 text-[11px] font-bold text-cyan-400 hover:text-cyan-300 transition-colors"
+                >
+                  Create ORCA Marine EcoSystem Account <ArrowRight className="w-3.5 h-3.5" />
                 </a>
               </div>
-              <div className="pt-3 border-t border-white/[0.04] space-y-2">
-                <p className="text-[10px] text-slate-500">Administrator MFA portal</p>
+              <div className="pt-3 border-t border-white/[0.04]">
                 <a
                   href="#/admin-login"
                   className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-cyan-400 hover:text-cyan-300 transition-colors"
                 >
-                  <KeyRound className="w-3 h-3" />
-                  Access Admin Portal
+                  <KeyRound className="w-3 h-3" /> Access Admin Portal
                 </a>
               </div>
             </div>
+
           </motion.div>
 
-          {/* Below-card version / copyright line */}
           <p className="mt-5 text-center text-[11px] text-slate-600">
-            © 2026 FloatChat Enterprise — ARGO Ocean Data Platform v2.4.0
+            © 2026 ORCA Marine EcoSystem — ARGO Ocean Data Platform v2.4.0
           </p>
         </motion.div>
       </div>
@@ -814,8 +685,6 @@ export const LoginPage: React.FC = () => {
           MODAL OVERLAYS
       ═══════════════════════════════════════════════ */}
       <AnimatePresence>
-
-        {/* Login Failed */}
         {modal === 'error' && (
           <Modal onClose={() => setModal(null)}>
             <div className="rounded-2xl bg-[#0d1628] border border-rose-500/30 shadow-2xl p-6 space-y-5 text-center">
@@ -829,13 +698,18 @@ export const LoginPage: React.FC = () => {
               <div className="flex gap-3">
                 <button
                   onClick={() => setModal(null)}
-                  className="flex-1 py-2.5 rounded-xl text-xs font-semibold text-slate-300 bg-white/[0.05] border border-white/[0.08] hover:bg-white/[0.09] transition-colors"
+                  className="flex-1 py-2.5 rounded-xl text-xs font-semibold text-slate-300 bg-white/[0.05] border border-white/[0.08] hover:bg-white/[0.09] transition-colors cursor-pointer"
                 >
                   Close
                 </button>
                 <button
-                  onClick={() => { setModal(null); setPassword(''); }}
-                  className="flex-1 py-2.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-rose-600 to-rose-500 hover:opacity-90 transition-opacity"
+                  onClick={() => {
+                    setModal(null);
+                    if (email && password) {
+                      handleSubmit({ preventDefault: () => {} } as any);
+                    }
+                  }}
+                  className="flex-1 py-2.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-rose-600 to-rose-500 hover:opacity-90 transition-opacity cursor-pointer"
                 >
                   Retry
                 </button>
@@ -844,29 +718,23 @@ export const LoginPage: React.FC = () => {
           </Modal>
         )}
 
-        {/* Login Success */}
         {modal === 'success' && (
           <Modal onClose={() => {}}>
             <div className="rounded-2xl bg-[#0d1628] border border-emerald-500/30 shadow-2xl p-6 space-y-5 text-center">
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ type: 'spring', stiffness: 400, damping: 18 }}
-                className="w-14 h-14 mx-auto rounded-2xl bg-emerald-500/15 border border-emerald-500/25 flex items-center justify-center"
-              >
+              <div className="w-14 h-14 mx-auto rounded-2xl bg-emerald-500/15 border border-emerald-500/25 flex items-center justify-center">
                 <CheckCircle2 className="w-7 h-7 text-emerald-400" />
-              </motion.div>
+              </div>
               <div>
                 <h3 className="text-base font-bold text-white">Login Successful</h3>
                 <p className="text-xs text-slate-400 mt-1.5">
-                  Welcome, <span className="text-emerald-400 font-semibold">{role}</span>. Redirecting to dashboard…
+                  Redirecting to dashboard…
                 </p>
               </div>
               <div className="h-1 bg-slate-800 rounded-full overflow-hidden">
                 <motion.div
                   initial={{ width: 0 }}
                   animate={{ width: '100%' }}
-                  transition={{ duration: 2, ease: 'linear' }}
+                  transition={{ duration: 0.8, ease: 'linear' }}
                   className="h-full bg-emerald-500 rounded-full"
                 />
               </div>
@@ -874,30 +742,6 @@ export const LoginPage: React.FC = () => {
           </Modal>
         )}
 
-        {/* Account Disabled */}
-        {modal === 'disabled' && (
-          <Modal onClose={() => setModal(null)}>
-            <div className="rounded-2xl bg-[#0d1628] border border-amber-500/30 shadow-2xl p-6 space-y-4 text-center">
-              <div className="w-14 h-14 mx-auto rounded-2xl bg-amber-500/10 border border-amber-500/25 flex items-center justify-center">
-                <AlertTriangle className="w-7 h-7 text-amber-400" />
-              </div>
-              <div>
-                <h3 className="text-base font-bold text-white">Access Restricted</h3>
-                <p className="text-xs text-slate-400 mt-1.5 leading-relaxed">
-                  Your account has been disabled. Please contact your Administrator.
-                </p>
-              </div>
-              <button
-                onClick={() => setModal(null)}
-                className="w-full py-2.5 rounded-xl text-xs font-semibold text-slate-300 bg-white/[0.05] border border-white/[0.08] hover:bg-white/[0.09] transition-colors"
-              >
-                Close
-              </button>
-            </div>
-          </Modal>
-        )}
-
-        {/* Forgot Password */}
         {modal === 'forgot' && (
           <Modal onClose={() => setModal(null)}>
             <div className="rounded-2xl bg-[#0d1628] border border-cyan-500/30 shadow-2xl p-6 space-y-4">
@@ -905,12 +749,12 @@ export const LoginPage: React.FC = () => {
                 <h3 className="text-sm font-bold text-white flex items-center gap-2">
                   <KeyRound className="w-4 h-4 text-cyan-400" /> Reset Password
                 </h3>
-                <button onClick={() => setModal(null)} className="text-slate-500 hover:text-white transition-colors">
+                <button onClick={() => setModal(null)} className="text-slate-500 hover:text-white transition-colors cursor-pointer">
                   <X className="w-4 h-4" />
                 </button>
               </div>
               <p className="text-xs text-slate-400 leading-relaxed">
-                Enter your registered email address and we'll send a secure reset token.
+                Enter your registered email address and we'll send a secure password reset link.
               </p>
               <input
                 type="email"
@@ -919,15 +763,17 @@ export const LoginPage: React.FC = () => {
                 className="w-full px-3 py-2.5 rounded-xl text-xs bg-white/[0.05] border border-white/[0.08] focus:border-cyan-500/50 focus:outline-none focus:ring-2 focus:ring-cyan-500/25 text-slate-100 placeholder-slate-500"
               />
               <button
-                onClick={() => setModal(null)}
-                className="w-full py-2.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-ocean-500 to-cyan-500 hover:opacity-90 transition-opacity"
+                onClick={() => {
+                  setModal(null);
+                  addToast('info', 'Password Reset Requested', 'If an account exists with this email, password reset instructions have been dispatched.');
+                }}
+                className="w-full py-2.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-sky-600 to-cyan-500 hover:opacity-90 transition-opacity cursor-pointer"
               >
-                Send Reset Token
+                Send Reset Link
               </button>
             </div>
           </Modal>
         )}
-
       </AnimatePresence>
     </div>
   );

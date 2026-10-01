@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Lock, Eye, EyeOff, KeyRound, ShieldAlert, CheckCircle2, XCircle, AlertTriangle, Clock } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
 import { useData } from '../../context/DataContext';
+import { useAuth } from '../../context/AuthContext';
+import { getApiUrl } from '../../utils/api';
 
 interface PasskeyModalProps {
   onSuccess: () => void;
@@ -14,6 +16,7 @@ const LOCKOUT_KEY = 'floatchat_passkey_lockout_until';
 export const PasskeyModal: React.FC<PasskeyModalProps> = ({ onSuccess, onCancel }) => {
   const { addToast } = useToast();
   const { addAuditLog } = useData();
+  const { user } = useAuth();
 
   const [passkey, setPasskey] = useState('');
   const [showPasskey, setShowPasskey] = useState(false);
@@ -23,6 +26,7 @@ export const PasskeyModal: React.FC<PasskeyModalProps> = ({ onSuccess, onCancel 
   const [timeLeft, setTimeLeft] = useState(59);
 
   // Lockout check
+
   const [lockoutRemaining, setLockoutRemaining] = useState<number | null>(() => {
     const lockUntil = localStorage.getItem(LOCKOUT_KEY);
     if (lockUntil) {
@@ -64,10 +68,9 @@ export const PasskeyModal: React.FC<PasskeyModalProps> = ({ onSuccess, onCancel 
       setTimeLeft((prev) => {
         if (prev <= 1) {
           clearInterval(timer);
-          // Audit Log & Toast for Timeout
           addAuditLog({
-            username: 'System Administrator',
-            role: 'Admin',
+            username: user?.name || 'System Administrator',
+            role: user?.role || 'Admin',
             action: 'SECURITY_VERIFICATION_TIMEOUT',
             status: 'Failed',
             severity: 'Medium',
@@ -83,9 +86,8 @@ export const PasskeyModal: React.FC<PasskeyModalProps> = ({ onSuccess, onCancel 
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [lockoutRemaining, onCancel, addToast, addAuditLog]);
+  }, [lockoutRemaining, onCancel, addToast, addAuditLog, user]);
 
-  // Color dynamics based on time left
   const getTimerColor = (sec: number) => {
     if (sec >= 30) return { text: 'text-emerald-400', stroke: '#10b981', bg: 'bg-emerald-500/10 border-emerald-500/30' };
     if (sec >= 10) return { text: 'text-amber-400', stroke: '#f59e0b', bg: 'bg-amber-500/10 border-amber-500/30' };
@@ -96,71 +98,95 @@ export const PasskeyModal: React.FC<PasskeyModalProps> = ({ onSuccess, onCancel 
   const strokeDashoffset = 125.6 - (125.6 * timeLeft) / 59;
 
   const handleVerify = async (e?: React.FormEvent) => {
+
     if (e) e.preventDefault();
     if (!passkey.trim() || lockoutRemaining !== null || isVerifying) return;
 
     setIsVerifying(true);
     setErrorMsg('');
 
+    // Capture passkey value now before clearing it
+    const enteredPasskey = passkey.trim();
+
+    let responseStatus: number | null = null;
+    let backendReachable = false;
+
     try {
-      // Backend API validation
-      const baseUrl = (import.meta.env.VITE_API_URL || 'http://localhost:8000').replace(/\/$/, '');
+      const baseUrl = getApiUrl();
+      const token = localStorage.getItem('floatchat_token');
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
       const response = await fetch(`${baseUrl}/auth/verify-passkey`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ passkey })
+        headers,
+        body: JSON.stringify({ passkey: enteredPasskey }),
       });
+
+      backendReachable = true;
+      responseStatus = response.status;
+
       if (response.ok) {
+        // ✅ Correct passkey — backend confirmed
         setIsVerifying(false);
         addToast('verification_success', 'Verification Successful', 'Administrator Passkey confirmed.');
         addAuditLog({
-          username: 'System Administrator',
-          role: 'Admin',
+          username: user?.name || 'System Administrator',
+          role: user?.role || 'Admin',
           action: 'SECURITY_VERIFICATION_SUCCESS',
           status: 'Success',
           severity: 'Low',
           ipAddress: '127.0.0.1',
-          description: 'Admin passkey verified successfully for elevated SOC access.'
+          description: 'Admin passkey verified successfully for elevated SOC access.',
         });
         onSuccess();
         return;
-      } else {
-        throw new Error('Invalid passkey');
       }
-    } catch (err) {
-      // Fallback: if backend is unreachable, validate locally
-      await new Promise((r) => setTimeout(r, 600));
+
+      // Backend responded but passkey was wrong (401) — treat as wrong passkey
+      let detail = 'Invalid Security Passkey. Please try again.';
+      try {
+        const errBody = await response.json();
+        if (errBody?.detail) detail = errBody.detail;
+      } catch {
+        // ignore JSON parse errors
+      }
+      throw Object.assign(new Error(detail), { isWrongPasskey: true });
+
+    } catch (err: any) {
       setIsVerifying(false);
-
-      const validPasskeys = ['Flowchat@2026'];
-
-      if (validPasskeys.includes(passkey.trim())) {
-        addToast('verification_success', 'Verification Successful', 'Administrator Passkey confirmed.');
-        addAuditLog({
-          username: 'System Administrator',
-          role: 'Admin',
-          action: 'SECURITY_VERIFICATION_SUCCESS',
-          status: 'Success',
-          severity: 'Low',
-          ipAddress: '127.0.0.1',
-          description: 'Admin passkey verified via local fallback.'
-        });
-        onSuccess();
-        return;
-      }
-
-      const newCount = failedAttempts + 1;
-      setFailedAttempts(newCount);
       setPasskey('');
 
+      // ❌ Network error (CORS, backend unreachable, VITE_API_URL not set, etc.)
+      // Distinguish from a wrong-passkey rejection so the user sees the real problem
+      if (!backendReachable) {
+        const networkMsg = 'Cannot reach the security server. Check your network connection or API configuration.';
+        setErrorMsg(networkMsg);
+        addAuditLog({
+          username: user?.name || 'System Administrator',
+          role: user?.role || 'Admin',
+          action: 'SECURITY_VERIFICATION_NETWORK_ERROR',
+          status: 'Failed',
+          severity: 'High',
+          ipAddress: '127.0.0.1',
+          description: `Security verification network error: ${err?.message || 'fetch failed'}`,
+        });
+        // Do NOT increment attempt counter for network errors — it's not the user's fault
+        return;
+      }
+
+      // ❌ Wrong passkey — backend returned 401/400
+      const newCount = failedAttempts + 1;
+      setFailedAttempts(newCount);
+
       addAuditLog({
-        username: 'System Administrator',
-        role: 'Admin',
+        username: user?.name || 'System Administrator',
+        role: user?.role || 'Admin',
         action: 'SECURITY_VERIFICATION_FAILED',
         status: 'Failed',
         severity: 'High',
         ipAddress: '127.0.0.1',
-        description: `Invalid passkey attempt #${newCount}`
+        description: `Invalid passkey attempt #${newCount} (HTTP ${responseStatus ?? 'unknown'})`,
       });
 
       if (newCount >= 3) {
@@ -168,21 +194,23 @@ export const PasskeyModal: React.FC<PasskeyModalProps> = ({ onSuccess, onCancel 
         localStorage.setItem(LOCKOUT_KEY, lockUntil.toString());
         setLockoutRemaining(300);
         addAuditLog({
-          username: 'System Administrator',
-          role: 'Admin',
+          username: user?.name || 'System Administrator',
+          role: user?.role || 'Admin',
           action: 'SECURITY_LOCKOUT',
           status: 'Blocked',
           severity: 'Critical',
           ipAddress: '127.0.0.1',
-          description: 'Too many failed passkey attempts. Security verification locked for 5 minutes.'
+          description: 'Too many failed passkey attempts. Security verification locked for 5 minutes.',
         });
       } else {
-        setErrorMsg('Invalid Security Passkey. Please try again.');
+        setErrorMsg(err?.message || 'Invalid Security Passkey. Please try again.');
       }
     }
   };
 
+
   const formatLockoutTime = (seconds: number) => {
+
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
@@ -272,6 +300,8 @@ export const PasskeyModal: React.FC<PasskeyModalProps> = ({ onSuccess, onCancel 
             {/* Form */}
             <form onSubmit={handleVerify} className="space-y-4">
               <div className="space-y-1.5">
+
+
                 <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
                   Security Passkey
                 </label>

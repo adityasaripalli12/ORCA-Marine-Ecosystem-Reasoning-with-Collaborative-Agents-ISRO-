@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { ToastProvider } from './context/ToastContext';
 import { DataProvider } from './context/DataContext';
+import { I18nProvider, useTranslation } from './i18n';
 import { Lock, KeyRound, ShieldAlert } from 'lucide-react';
 
 import { Navbar } from './components/layout/Navbar';
@@ -15,23 +16,27 @@ import { RegisterPage } from './pages/RegisterPage';
 import { AdminLoginPage } from './pages/AdminLoginPage';
 
 import { DashboardPage } from './pages/DashboardPage';
+import { FlowChatAIPage } from './pages/FlowChatAIPage';
+import { ResearchChatPage } from './pages/ResearchChatPage';
 import { UploadPage } from './pages/UploadPage';
-import { AIChatPage } from './pages/AIChatPage';
 import { VisualizationPage } from './pages/VisualizationPage';
 import { DatasetManagerPage } from './pages/DatasetManagerPage';
 import { SecurityDashboardPage } from './pages/SecurityDashboardPage';
 import { AuditLogsPage } from './pages/AuditLogsPage';
 import { UserManagementPage } from './pages/UserManagementPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { DeviceProvider } from './context/DeviceContext';
 
 import { ForbiddenPage } from './pages/ForbiddenPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { Error500Page } from './pages/Error500Page';
+import { FloatingAIAssistant } from './components/common/FloatingAIAssistant';
 
 const AppRouter: React.FC = () => {
   const [currentHash, setCurrentHash] = useState<string>(window.location.hash || '#/');
   const [isPasskeyVerified, setIsPasskeyVerified] = useState(false);
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, isLoading } = useAuth();
+  const { t } = useTranslation();
 
   useEffect(() => {
     const handleHashChange = () => {
@@ -41,23 +46,24 @@ const AppRouter: React.FC = () => {
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
-  // Page Titles Map
+  // Translated Page Titles Map
   const pageTitles: Record<string, string> = {
-    '#/dashboard': 'Operations Dashboard',
-    '#/ai-chat': 'AI Ocean Chat',
-    '#/upload': 'Upload Dataset',
-    '#/datasets': 'Dataset Manager',
-    '#/visualization': 'Data Visualization',
-    '#/security': 'Security Dashboard',
-    '#/audit-logs': 'System Audit Logs',
-    '#/user-management': 'User Management',
-    '#/settings': 'System Settings',
-    '#/403': '403 Forbidden',
-    '#/404': '404 Not Found',
-    '#/500': '500 System Error'
+    '#/dashboard': t('nav.dashboard', {}, 'Operations Dashboard'),
+    '#/flowchat-ai': t('nav.flowchatAi', {}, 'ORCA AI'),
+    '#/research-chat': t('nav.researchChat', {}, 'Research Collaboration & Chat'),
+    '#/upload': t('nav.upload', {}, 'Upload Dataset'),
+    '#/datasets': t('nav.datasets', {}, 'Dataset Manager'),
+    '#/visualization': t('nav.visualization', {}, 'Data Visualization'),
+    '#/security': t('nav.security', {}, 'Security Dashboard'),
+    '#/audit-logs': t('nav.auditLogs', {}, 'System Audit Logs'),
+    '#/user-management': t('nav.userManagement', {}, 'User Management'),
+    '#/settings': t('nav.settings', {}, 'System Settings'),
+    '#/403': t('errors.forbiddenTitle', {}, '403 Forbidden'),
+    '#/404': t('errors.notFoundTitle', {}, '404 Not Found'),
+    '#/500': t('errors.serverErrorTitle', {}, '500 System Error')
   };
 
-  const activeTitle = pageTitles[currentHash] || 'FloatChat Enterprise';
+  const activeTitle = pageTitles[currentHash] || 'ORCA Marine EcoSystem';
 
   // Public Full-Page Routes
   if (currentHash === '' || currentHash === '#/' || currentHash === '#' || currentHash === '#/landing') {
@@ -76,10 +82,22 @@ const AppRouter: React.FC = () => {
     return <AdminLoginPage />;
   }
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-[#030918] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 rounded-full border-2 border-cyan-500/20 border-t-cyan-400 animate-spin" />
+          <p className="text-xs font-mono text-cyan-400/80 tracking-widest uppercase">{t('common.loading', {}, 'Initializing ORCA Marine EcoSystem…')}</p>
+        </div>
+      </div>
+    );
+  }
+
   // Handle Unauthenticated state -> redirect to Login for protected routes
   if (!isAuthenticated) {
     return <LoginPage />;
   }
+
 
   const isProtectedAdminRoute = (currentHash === '#/security' || currentHash === '#/audit-logs' || currentHash === '#/user-management') && user?.role === 'Admin';
   const showPasskeyGate = isProtectedAdminRoute && !isPasskeyVerified;
@@ -99,8 +117,10 @@ const AppRouter: React.FC = () => {
       case '#/':
       case '#/dashboard':
         return <DashboardPage />;
-      case '#/ai-chat':
-        return <AIChatPage />;
+      case '#/flowchat-ai':
+        return <FlowChatAIPage />;
+      case '#/research-chat':
+        return <ResearchChatPage />;
       case '#/upload':
         return <UploadPage />;
       case '#/datasets':
@@ -133,21 +153,26 @@ const AppRouter: React.FC = () => {
           {renderMainContent()}
         </main>
       </div>
+      <FloatingAIAssistant />
     </div>
   );
 };
 
 export const App: React.FC = () => {
   return (
-    <AuthProvider>
-      <ThemeProvider>
-        <ToastProvider>
-          <DataProvider>
-            <AppRouter />
-          </DataProvider>
-        </ToastProvider>
-      </ThemeProvider>
-    </AuthProvider>
+    <I18nProvider>
+      <AuthProvider>
+        <ThemeProvider>
+          <ToastProvider>
+            <DataProvider>
+              <DeviceProvider>
+                <AppRouter />
+              </DeviceProvider>
+            </DataProvider>
+          </ToastProvider>
+        </ThemeProvider>
+      </AuthProvider>
+    </I18nProvider>
   );
 };
 export default App;

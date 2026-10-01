@@ -2,29 +2,32 @@ import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { 
-  ShieldCheck, Lock, Mail, KeyRound, ArrowRight, ShieldAlert, Waves
+  ShieldCheck, Lock, Mail, ArrowRight, ShieldAlert, Waves, Loader2
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export const AdminLoginPage: React.FC = () => {
-  const { adminLogin } = useAuth();
+  const { login } = useAuth();
   const { addToast } = useToast();
 
-  const [email, setEmail] = useState('admin.system@argo-ocean.org');
-  const [password, setPassword] = useState('●●●●●●●●●●●●');
-  const [mfaCode, setMfaCode] = useState('123456');
+  const [email, setEmail] = useState('admin@argo.edu');
+  const [password, setPassword] = useState('admin123');
   const [errorMsg, setErrorMsg] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
-    const success = adminLogin(email, mfaCode);
-    if (success) {
-      addToast('login_success', 'Admin Session Verified', 'Full administrator privileges granted via MFA 2FA.');
+    setIsLoading(true);
+    try {
+      await login(email, password, 'Admin');
+      setIsLoading(false);
+      addToast('login_success', 'Admin Session Verified', 'Full administrator privileges granted.');
       window.location.hash = '#/dashboard';
-    } else {
-      setErrorMsg('Invalid 6-digit MFA TOTP code. (Demo code: 123456)');
-      addToast('integrity_failed', 'MFA Verification Failed', 'Invalid 6-digit TOTP key submit.');
+    } catch (err: any) {
+      setIsLoading(false);
+      setErrorMsg(err.message || 'Invalid admin credentials.');
+      addToast('integrity_failed', 'Authentication Failed', 'Invalid admin authentication attempt.');
     }
   };
 
@@ -50,7 +53,7 @@ export const AdminLoginPage: React.FC = () => {
             </div>
             <div>
               <h2 className="text-2xl font-extrabold text-white tracking-tight">Admin<span className="text-rose-400">Portal</span></h2>
-              <p className="text-xs text-slate-400 mt-1">Multi-Factor Authenticated Enterprise Access</p>
+              <p className="text-xs text-slate-400 mt-1">Role-Based Enterprise Administrator Access</p>
             </div>
             
             {/* Warning Banner */}
@@ -92,35 +95,25 @@ export const AdminLoginPage: React.FC = () => {
               </div>
             </div>
 
-            {/* MFA TOTP Code */}
-            <div className="space-y-1.5">
-              <div className="flex justify-between items-center text-xs">
-                <label className="font-semibold text-slate-300">6-Digit MFA / TOTP Code</label>
-                <span className="text-[10px] text-cyan-400 font-mono">Demo: 123456</span>
-              </div>
-              <div className="relative">
-                <KeyRound className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input
-                  type="text"
-                  required
-                  maxLength={6}
-                  value={mfaCode}
-                  onChange={(e) => setMfaCode(e.target.value)}
-                  placeholder="123456"
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl text-xs font-mono tracking-widest glass-input focus:ring-2 focus:ring-rose-500/40"
-                />
-              </div>
-            </div>
-
             {errorMsg && (
               <p className="text-xs text-rose-400 bg-rose-500/10 p-2 rounded-lg border border-rose-500/20">{errorMsg}</p>
             )}
 
             <button
               type="submit"
-              className="w-full py-3 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 shadow-xl shadow-rose-500/25 transition-all flex items-center justify-center gap-2"
+              disabled={isLoading}
+              className="w-full py-3 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 shadow-xl shadow-rose-500/25 transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
             >
-              Verify MFA & Authorize Admin <ArrowRight className="w-4 h-4" />
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Verifying Admin Credentials…
+                </>
+              ) : (
+                <>
+                  Authorize Admin <ArrowRight className="w-4 h-4" />
+                </>
+              )}
             </button>
           </form>
 

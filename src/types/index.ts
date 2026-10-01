@@ -1,4 +1,4 @@
-export type UserRole = 'Admin' | 'Government' | 'Researcher' | 'Student';
+export type UserRole = 'Admin' | 'Government' | 'Researcher' | 'Student' | 'Shipping' | 'Coastal Guard';
 
 /** Central role configuration — single source of truth for badge styles, labels, and permissions */
 export const ROLE_CONFIG = {
@@ -10,14 +10,17 @@ export const ROLE_CONFIG = {
     textClass:   'text-rose-400',
     borderClass: 'border-rose-500/30',
     permissions: [
-      'Full Access',
+      'Full Platform Access',
       'User Management',
+      'Dataset Management',
       'Security Dashboard',
       'Audit Logs',
-      'Dataset Management',
       'System Settings',
+      'AI Access',
+      'Advanced Visualization',
+      'All Role Management',
     ],
-    navAccess: ['dashboard', 'ai-chat', 'upload', 'datasets', 'visualization', 'security', 'audit-logs', 'user-management', 'settings'],
+    navAccess: ['dashboard', 'flowchat-ai', 'research-chat', 'upload', 'datasets', 'visualization', 'security', 'audit-logs', 'user-management', 'settings'],
   },
   Government: {
     label: 'Government Agency',
@@ -27,14 +30,16 @@ export const ROLE_CONFIG = {
     textClass:   'text-emerald-400',
     borderClass: 'border-emerald-500/30',
     permissions: [
-      'Access All Datasets',
-      'AI Chat',
-      'Advanced Analytics',
-      'Download Reports',
-      'Export Ocean Data',
-      'Government Dashboard',
+      'Regional Ocean Intelligence',
+      'Dataset Read Access',
+      'Ocean Condition Analysis',
+      'Environmental Anomaly Analysis',
+      'Alerts & Warnings',
+      'Visualization',
+      'Report Generation',
+      'AI Research / Chat',
     ],
-    navAccess: ['dashboard', 'ai-chat', 'datasets', 'visualization'],
+    navAccess: ['dashboard', 'ocean-intel', 'flowchat-ai', 'regional-analysis', 'alerts', 'visualization', 'reports'],
   },
   Researcher: {
     label: 'Research Scientist',
@@ -44,12 +49,16 @@ export const ROLE_CONFIG = {
     textClass:   'text-cyan-400',
     borderClass: 'border-cyan-500/30',
     permissions: [
-      'Upload NetCDF',
-      'AI Chat',
-      'Visualization Dashboard',
-      'Dataset Manager',
+      'Full Scientific Dataset Access',
+      'Dataset Upload',
+      'Advanced AI Queries',
+      'Advanced Visualization',
+      'SQL / Query Inspection',
+      'Dataset Comparison',
+      'Statistical Analysis',
+      'Research Report Generation',
     ],
-    navAccess: ['dashboard', 'ai-chat', 'upload', 'datasets', 'visualization', 'settings'],
+    navAccess: ['dashboard', 'research-chat', 'flowchat-ai', 'upload', 'datasets', 'visualization', 'reports'],
   },
   Student: {
     label: 'Student / Public Access',
@@ -59,12 +68,51 @@ export const ROLE_CONFIG = {
     textClass:   'text-violet-400',
     borderClass: 'border-violet-500/30',
     permissions: [
-      'Read-only Dashboard',
-      'AI Chat',
-      'View Maps',
-      'View Graphs',
+      'Basic Dataset Access',
+      'Educational AI Chat',
+      'Basic Visualization',
+      'Guided Questions',
+      'Voice Input',
+      'Multilingual Interaction',
     ],
-    navAccess: ['dashboard', 'ai-chat', 'visualization'],
+    navAccess: ['dashboard', 'learn-ocean', 'flowchat-ai', 'visualization'],
+  },
+  Shipping: {
+    label: 'Shipping & Maritime',
+    emoji: '🚢',
+    color: 'amber',
+    bgClass:     'bg-amber-500/10',
+    textClass:   'text-amber-400',
+    borderClass: 'border-amber-500/30',
+    permissions: [
+      'Maritime Ocean Condition Info',
+      'Regional Ocean Analysis',
+      'Maritime Operational Map',
+      'Temperature & Salinity',
+      'Pressure & Depth',
+      'Current-related Data',
+      'Maritime AI Assistant',
+      'Maritime Operations Alerts',
+    ],
+    navAccess: ['dashboard', 'maritime-intel', 'flowchat-ai', 'ocean-conditions', 'operational-map', 'alerts', 'visualization', 'reports'],
+  },
+  'Coastal Guard': {
+    label: 'Coastal Guard Safety',
+    emoji: '🛡️',
+    color: 'orange',
+    bgClass:     'bg-orange-500/10',
+    textClass:   'text-orange-400',
+    borderClass: 'border-orange-500/30',
+    permissions: [
+      'Maritime Safety Information',
+      'Ocean Anomaly Alerts',
+      'Coastal Alerts Dashboard',
+      'Regional Visualization',
+      'Operational Safety Map',
+      'Safety AI Assistant',
+      'Report Generation',
+    ],
+    navAccess: ['dashboard', 'maritime-safety', 'flowchat-ai', 'ocean-conditions', 'coastal-alerts', 'operational-map', 'visualization', 'reports'],
   },
 } as const satisfies Record<UserRole, {
   label: string; emoji: string; color: string;
@@ -98,12 +146,14 @@ export interface GovAccessKey {
 }
 
 export interface DatasetMetadata {
-  latitude: number;
-  longitude: number;
-  temperature: number; // °C
-  pressure: number;    // dbar
-  salinity: number;    // PSU
-  depth: number;       // meters
+  latitude?: number;
+  longitude?: number;
+  temperature?: number; // °C
+  pressure?: number;    // dbar
+  salinity?: number;    // PSU
+  depth?: number;       // meters
+  record_count?: number;
+  [key: string]: any;
 }
 
 export interface DatasetItem {
@@ -112,8 +162,13 @@ export interface DatasetItem {
   fileSize: string;
   format: '.nc' | '.csv' | '.json';
   sha256: string;
-  verificationStatus: 'Verified' | 'Pending' | 'Failed';
-  duplicateStatus: 'Unique' | 'Duplicate Found';
+  verificationStatus: 'Verified' | 'Pending' | 'Failed' | 'Invalid' | 'Requires Review' | 'VALID' | 'INVALID' | 'QUARANTINED';
+  duplicateStatus: 'Unique' | 'Duplicate' | 'Possible Duplicate' | 'Under Review' | 'Quarantined' | 'Invalid' | 'Processing...';
+  similarityScore?: number;
+  contentFingerprint?: string;
+  duplicateOfId?: string;
+  aiAnalysis?: any;
+  validationDetails?: any;
   uploadedBy: string;
   uploadDate: string;
   rowCount: number;
@@ -125,8 +180,16 @@ export interface SecurityEvent {
   time: string;
   user: string;
   action: string;
+  source?: string;
+  riskScore?: number;
+  riskLevel?: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' | string;
+  actionTaken?: string;
   severity: 'Low' | 'Medium' | 'High' | 'Critical';
-  status: 'Blocked' | 'Allowed' | 'Flagged';
+  status: 'Blocked' | 'Allowed' | 'Flagged' | 'Denied' | string;
+  deviceId?: string;
+  latitude?: number;
+  longitude?: number;
+  userRole?: string;
   details: string;
 }
 
@@ -145,17 +208,96 @@ export interface AuditLogItem {
   description: string;
 }
 
+export interface ChatMessageLocation {
+  name: string;
+  deviceId?: string;
+  latitude: number;
+  longitude: number;
+  depth?: number;
+  temp?: number;
+  battery?: number;
+  signal?: number;
+  salinity?: number;
+  pressure?: number;
+  ph?: number;
+  do?: number;
+  status?: string;
+  last_updated?: string;
+  anomalies?: string[];
+  details?: string;
+  type?: string;
+}
+
+export interface ObservationData {
+  title: string;
+  value_display: string;
+  subtitle?: string;
+  parameter?: string;
+  value?: number;
+  unit?: string;
+  region?: string;
+  wmo_id?: string;
+  depth?: number;
+  latitude?: number;
+  longitude?: number;
+  observation_time?: string;
+  quality_flag?: string;
+  source?: string;
+  dataset?: string;
+  stats?: {
+    count?: number;
+    mean?: number;
+    min?: number;
+    max?: number;
+    time_range?: string;
+    max_z_score?: number;
+    [key: string]: any;
+  };
+}
+
 export interface ChatMessage {
   id: string;
   sender: 'user' | 'assistant';
   content: string;
   timestamp: string;
+  intent?: string;
+  mapAction?: 'SHOW_DEVICE' | 'SHOW_ALL_DEVICES' | 'SHOW_CRITICAL_DEVICES' | 'SHOW_ANOMALIES' | 'SHOW_LOCATION' | 'ASK_DEVICE' | 'NONE' | string;
+  deviceId?: string;
+  location?: { latitude: number; longitude: number };
   sqlQuery?: string;
   confidenceScore?: number;
+  confidenceLabel?: string;
+  observationData?: ObservationData;
+  provenance?: {
+    source: string;
+    dataset?: string;
+    wmo_id?: string;
+    observation_time?: string;
+    data_age?: string;
+    quality_flag?: string;
+    confidence_label?: string;
+    evidence_score?: number;
+  };
   retrievedDocs?: { title: string; floatId: string; relevance: string }[];
   executionTimeMs?: number;
   isBlocked?: boolean;
+  hasGeoData?: boolean;
+  requiresMap?: boolean;
+  requiresConfirmation?: boolean;
+  confirmationAction?: string;
+  riskScore?: number;
+  riskLevel?: string;
+  locations?: ChatMessageLocation[];
+  sources?: string[];
+  datasetUsed?: string;
+  recordsRetrieved?: number;
+  suggestions?: string[];
+  inputMode?: 'voice' | 'text';
+  detectedLanguage?: string;
+  translatedQuery?: string;
 }
+
+
 
 export interface ChatConversation {
   id: string;
@@ -178,3 +320,35 @@ export interface ArgoFloat {
   lastTransmission: string;
   status: 'Active' | 'Maintenance' | 'Historical';
 }
+
+export interface OceanAlertItem {
+  id: string;
+  hazard_event_id?: string;
+  alert_level: 'NORMAL' | 'ADVISORY' | 'WARNING' | 'CRITICAL';
+  hazard_type: string;
+  title: string;
+  message: string;
+  action_guidance?: string;
+  confidence_score: number;
+  confidence_label: string;
+  latitude?: number;
+  longitude?: number;
+  region?: string;
+  sources?: string;
+  fingerprint: string;
+  escalation_count?: number;
+  created_at: string;
+  updated_at: string;
+  expires_at: string;
+  status: string;
+}
+
+export interface HazardSummary {
+  overall_status: 'NORMAL' | 'ADVISORY' | 'WARNING' | 'CRITICAL';
+  active_alerts_total: number;
+  critical_alerts: number;
+  warning_alerts: number;
+  advisory_alerts: number;
+  recent_alerts: OceanAlertItem[];
+}
+

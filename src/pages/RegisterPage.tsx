@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { UserRole, ROLE_CONFIG } from '../types';
+import { getApiUrl } from '../utils/api';
 import {
   Waves, Eye, EyeOff, ShieldCheck, Lock, Mail,
   ArrowRight, CheckSquare, Square, CheckCircle2,
@@ -8,6 +10,7 @@ import {
   Globe, X, User, Phone, Building2, UserPlus
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+
 
 /* ──────────────────────────────────────────────────────
    Password helpers
@@ -181,6 +184,7 @@ const ORG_EXAMPLES = ['INCOIS', 'ISRO', 'ARGO Research Institute', 'State Univer
    Main RegisterPage
 ────────────────────────────────────────────────────── */
 export const RegisterPage: React.FC = () => {
+  const { register } = useAuth();
   const { addToast } = useToast();
 
   const [fullName,   setFullName]   = useState('');
@@ -249,50 +253,52 @@ export const RegisterPage: React.FC = () => {
 
     if (role === 'Government') {
       try {
-        // Attempt backend validation
-        const baseUrl = (import.meta.env.VITE_API_URL || 'http://localhost:8000').replace(/\/$/, '');
+        const baseUrl = getApiUrl();
         const response = await fetch(`${baseUrl}/auth/verify-gov`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, org: govOrg, access_key: accessKey })
         });
-        
+
         if (!response.ok) {
           setIsLoading(false);
           setModal('gov_key_invalid');
           return;
         }
-        addToast('gov_success', 'Government Verification Successful', 'Continue creating account.');
+        addToast('gov_success', 'Government Verification Successful', 'Authorization confirmed.');
       } catch (err) {
-        // Fallback mock validation if backend isn't running
-        await new Promise((r) => setTimeout(r, 1000));
-        if (accessKey !== 'Flowchat@2026') {
-          setIsLoading(false);
-          setModal('gov_key_invalid');
-          return;
-        }
-        addToast('gov_success', 'Government Verification Successful', 'Continue creating account.');
+        setIsLoading(false);
+        setModal('gov_key_invalid');
+        return;
       }
     }
 
-    await new Promise((r) => setTimeout(r, 1600));
-    setIsLoading(false);
+    try {
+      await register(fullName.trim(), email.trim(), password, role, org);
+      setIsLoading(false);
 
-    // Demo: "taken@example.com" simulates existing account
-    if (email.toLowerCase() === 'taken@example.com') {
-      setModal('duplicate');
-      return;
-    }
+      if (role === 'Government') {
+        setModal('gov_success');
+      } else {
+        addToast('login_success', 'Account Created in Database', `Welcome to ORCA Marine EcoSystem, ${fullName.split(' ')[0]}!`);
+        setModal('success');
+      }
 
-    if (role === 'Government') {
-      setModal('gov_success');
-    } else {
-      addToast('login_success', 'Account Created', `Welcome to FloatChat, ${fullName.split(' ')[0]}!`);
-      setModal('success');
+      setTimeout(() => {
+        window.location.hash = '#/dashboard';
+      }, 1500);
+    } catch (err: any) {
+      setIsLoading(false);
+      if (err.message && err.message.toLowerCase().includes('already exists')) {
+        setModal('duplicate');
+      } else {
+        addToast('error', 'Registration Failed', err.message || 'Could not create account');
+      }
     }
   };
 
   return (
+
     <div className="min-h-screen flex overflow-hidden bg-[#030918] selection:bg-cyan-500 selection:text-white">
 
       {/* ══════════ LEFT PANEL ══════════ */}
@@ -335,9 +341,9 @@ export const RegisterPage: React.FC = () => {
             </div>
             <div>
               <span className="text-2xl font-extrabold text-white tracking-tight">
-                Float<span className="text-cyan-400">Chat</span>
+                ORCA <span className="text-cyan-400">Marine EcoSystem</span>
               </span>
-              <div className="text-[10px] uppercase tracking-widest text-cyan-400/70 font-bold mt-0.5">Enterprise v2.4</div>
+              <div className="text-[10px] uppercase tracking-widest text-cyan-400/70 font-bold mt-0.5">ENTERPRISE V2.4 • OCEAN PLATFORM</div>
             </div>
           </motion.div>
 
@@ -436,7 +442,7 @@ export const RegisterPage: React.FC = () => {
               </div>
 
               <div>
-                <h2 className="text-xl font-extrabold text-white tracking-tight">Create FloatChat Account</h2>
+                <h2 className="text-xl font-extrabold text-white tracking-tight">Create ORCA Marine EcoSystem Account</h2>
                 <p className="text-xs text-slate-400 mt-1">Join the AI Powered Ocean Data Discovery Platform</p>
               </div>
 
@@ -509,7 +515,7 @@ export const RegisterPage: React.FC = () => {
                     onChange={(e) => { setPassword(e.target.value); clearError('password'); }}
                     onFocus={() => setPwdFocused(true)}
                     onBlur={() => setPwdFocused(false)}
-                    placeholder="FloatChat@2026"
+                    placeholder="ORCA@2026"
                     className={`w-full pl-10 pr-10 py-2.5 rounded-xl text-xs bg-white/[0.05] border ${
                       errors.password ? 'border-rose-500/60' : 'border-white/[0.08] focus:border-cyan-500/50'
                     } text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/25 transition-all`}
@@ -750,7 +756,7 @@ export const RegisterPage: React.FC = () => {
               <p className="text-[11px] text-slate-500">Already have an account?</p>
               <a href="#/login"
                 className="inline-flex items-center gap-1.5 text-[11px] font-bold text-cyan-400 hover:text-cyan-300 transition-colors">
-                Sign In to FloatChat <ArrowRight className="w-3.5 h-3.5" />
+                Sign In to ORCA Marine EcoSystem <ArrowRight className="w-3.5 h-3.5" />
               </a>
             </div>
 
@@ -770,7 +776,7 @@ export const RegisterPage: React.FC = () => {
           </motion.div>
 
           <p className="mt-5 text-center text-[11px] text-slate-600">
-            © 2026 FloatChat Enterprise — ARGO Ocean Data Platform v2.4.0
+            © 2026 ORCA Marine EcoSystem — ARGO Ocean Data Platform v2.4.0
           </p>
         </div>
       </div>
@@ -793,7 +799,7 @@ export const RegisterPage: React.FC = () => {
               <div>
                 <h3 className="text-base font-bold text-white">Account Created Successfully!</h3>
                 <p className="text-xs text-slate-400 mt-2 leading-relaxed">
-                  Welcome to FloatChat,{' '}
+                  Welcome to ORCA Marine EcoSystem,{' '}
                   <span className="text-emerald-400 font-semibold">{fullName.split(' ')[0]}</span>!
                   <br />Your account is ready. You can now log in.
                 </p>

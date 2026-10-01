@@ -103,16 +103,17 @@ export const SecurityDashboardPage: React.FC = () => {
           </div>
         </GlassCard>
 
-        {/* Upload Verification Pipeline Status */}
+        {/* Upload Verification & Duplicate Detection Pipeline Status */}
         <GlassCard hoverEffect={false} className="space-y-4">
           <h3 className="text-sm font-bold text-white flex items-center gap-2">
             <ShieldCheck className="w-4 h-4 text-emerald-400" />
-            Data Integrity & WAF Filter Pipeline
+            Data Integrity, SHA-256 & Duplicate Pipeline
           </h3>
           <div className="space-y-3 pt-2">
             {[
-              { name: 'NetCDF Header Parsing Validation', status: '100% Passed', color: 'bg-emerald-500' },
-              { name: 'SHA-256 Checksum Matching Routine', status: '100% Verified', color: 'bg-cyan-500' },
+              { name: 'Role-Based Access Control (RBAC)', status: 'Enforced (Admin / Govt / Researcher)', color: 'bg-emerald-500' },
+              { name: 'Pre-Upload SHA-256 Duplicate Blocker', status: 'Active (Zero Duplicates Registered)', color: 'bg-cyan-500' },
+              { name: 'Content Fingerprint & Similarity Analyzer', status: 'Active (97% Threshold Detection)', color: 'bg-teal-500' },
               { name: 'Prompt Injection Safeguard Engine', status: 'Active (Automated Logging)', color: 'bg-amber-500' },
               { name: 'SQL Injection WAF Intercept Layer', status: 'Active (Threat Counter++)', color: 'bg-rose-500' }
             ].map((p, idx) => (

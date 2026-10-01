@@ -6,16 +6,17 @@ from backend.models.user import User
 from backend.models.audit import AuditLog
 from backend.schemas.user import UserCreate, UserUpdate, UserResponse
 from backend.auth.password import hash_password
-from backend.auth.dependencies import require_admin
+from backend.auth.dependencies import require_admin, require_users_manage
 
-router = APIRouter(prefix="/users", tags=["Users Management (Admin Only)"])
+router = APIRouter(prefix="", tags=["Users Management (Admin Only)"])
 
-@router.get("", response_model=List[UserResponse])
-def list_users(db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
+@router.get("/users", response_model=List[UserResponse])
+@router.get("/admin/users", response_model=List[UserResponse])
+def list_users(db: Session = Depends(get_db), current_user: User = Depends(require_users_manage)):
     return db.query(User).all()
 
-@router.post("", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
-def create_user(payload: UserCreate, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
+@router.post("/users", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+def create_user(payload: UserCreate, db: Session = Depends(get_db), current_user: User = Depends(require_users_manage)):
     existing = db.query(User).filter(User.email == payload.email).first()
     if existing:
         raise HTTPException(status_code=400, detail="User email already registered")
@@ -41,8 +42,8 @@ def create_user(payload: UserCreate, db: Session = Depends(get_db), current_user
     db.refresh(new_user)
     return new_user
 
-@router.put("/{user_id}", response_model=UserResponse)
-def update_user(user_id: str, payload: UserUpdate, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
+@router.put("/users/{user_id}", response_model=UserResponse)
+def update_user(user_id: str, payload: UserUpdate, db: Session = Depends(get_db), current_user: User = Depends(require_users_manage)):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -64,8 +65,8 @@ def update_user(user_id: str, payload: UserUpdate, db: Session = Depends(get_db)
     db.refresh(user)
     return user
 
-@router.delete("/{user_id}")
-def delete_user(user_id: str, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
+@router.delete("/users/{user_id}")
+def delete_user(user_id: str, db: Session = Depends(get_db), current_user: User = Depends(require_users_manage)):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")

@@ -205,6 +205,8 @@ export const UserManagementPage: React.FC = () => {
                   <option value="Government">Government Agency</option>
                   <option value="Researcher">Research Scientist</option>
                   <option value="Student">Student / Public</option>
+                  <option value="Shipping">Shipping & Maritime</option>
+                  <option value="Coastal Guard">Coastal Guard Safety</option>
                 </select>
               </div>
 
@@ -284,6 +286,8 @@ export const UserManagementPage: React.FC = () => {
                             <option value="Government">🟢 Government Agency</option>
                             <option value="Researcher">🔵 Research Scientist</option>
                             <option value="Student">🟣 Student / Public Access</option>
+                            <option value="Shipping">🚢 Shipping & Maritime</option>
+                            <option value="Coastal Guard">🛡️ Coastal Guard Safety</option>
                           </select>
                         </td>
 
@@ -533,6 +537,8 @@ export const UserManagementPage: React.FC = () => {
                       <option value="Government">Government Agency</option>
                       <option value="Admin">System Administrator</option>
                       <option value="Student">Student / Public</option>
+                      <option value="Shipping">Shipping & Maritime</option>
+                      <option value="Coastal Guard">Coastal Guard Safety</option>
                     </select>
                   </div>
 

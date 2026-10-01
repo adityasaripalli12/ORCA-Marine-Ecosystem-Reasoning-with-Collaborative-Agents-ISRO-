@@ -1,6 +1,16 @@
+@import "leaflet/dist/leaflet.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.leaflet-container {
+  width: 100%;
+  height: 100%;
+  border-radius: 1.5rem;
+  background: #080d1a !important;
+  z-index: 1;
+}
 
 @layer base {
   :root {
@@ -104,4 +114,53 @@
   color: #f8fafc !important;
   border: 1px solid rgba(56, 189, 248, 0.3);
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* Remove default Leaflet white attribution banner line */
+.leaflet-control-attribution {
+  display: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   MULTILINGUAL FONT OVERRIDES
+   Applied automatically when the i18n provider sets html[lang].
+   ───────────────────────────────────────────────────────────── */
+
+/* Telugu (te-IN) — Noto Sans Telugu with Gautami fallback */
+:root:lang(te-IN),
+html[lang="te-IN"] body,
+html[lang="te-IN"] * {
+  font-family: 'Noto Sans Telugu', 'Gautami', 'Mandali', 'Arial Unicode MS', sans-serif;
+}
+
+/* Hindi (hi-IN) — Noto Sans Devanagari with Mangal fallback */
+:root:lang(hi-IN),
+html[lang="hi-IN"] body,
+html[lang="hi-IN"] * {
+  font-family: 'Noto Sans Devanagari', 'Mangal', 'Utsaah', 'Arial Unicode MS', sans-serif;
+}
+
+/* English keeps the primary Inter font stack (no override needed) */
+html[lang="en-US"] body,
+html[lang="en"] body {
+  font-family: 'Inter', 'system-ui', 'sans-serif';
+}
+
+/* Smooth language-switch transition — prevents jarring flash */
+.lang-switching,
+.lang-switching * {
+  transition: font-family 0.15s ease, opacity 0.15s ease;
+}
+
+/* Ensure monospace elements keep font-mono even in Indic mode */
+html[lang="te-IN"] .font-mono,
+html[lang="hi-IN"] .font-mono,
+html[lang="te-IN"] kbd,
+html[lang="hi-IN"] kbd,
+html[lang="te-IN"] code,
+html[lang="hi-IN"] code {
+  font-family: 'ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', monospace !important;
 }
